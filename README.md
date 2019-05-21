@@ -3,7 +3,9 @@ A SNES emulator, in javascript
 
 My attempt at making a SNES emulator in Javascript. Currently working on the CPU emulation.
 
-This will probably never end up being an accurate emulator, but I hope to have some game running at least. There is also a pretty big chance that it won't be able to run at full speed.
+This will probably never end up being an accurate emulator, but I hope to have some games running at least. There is also a pretty big chance that it won't be able to run at full speed.
+
+Note that the CPU will not support emulation mode (at least for now), because it makes the code a lot more complicated (and probably slower), and no games seem to actually make use of it.
 
 ## Resources
 
