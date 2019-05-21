@@ -52,12 +52,46 @@ function Cpu(mem) {
 
   // modes for each instruction
   this.modes = [
-
+    //x0 x1   x2   x3   x4   x5   x6   x7   x8   x9   xa   xb   xc   xd   xe   xf
+    IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, //0x
+    IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, //1x
+    IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, //2x
+    IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, //3x
+    IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, //4x
+    IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, //5x
+    IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, //6x
+    IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, //7x
+    IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, //8x
+    IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, //9x
+    IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, //ax
+    IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, //bx
+    IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, //cx
+    IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, //dx
+    IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, //ex
+    IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, //fx
+    IMP, IMP, IMP // abo, nmi, irq
   ];
 
   // cycles for each instruction
   this.cycles = [
-
+    //0x1 x2 x3 x4 x5 x6 x7 x8 x9 xa xb xc xd xe xf
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, //0x
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, //1x
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, //2x
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, //3x
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, //4x
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, //5x
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, //6x
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, //7x
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, //8x
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, //9x
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, //ax
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, //bx
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, //cx
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, //dx
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, //ex
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1  //fx
+    7, 7, 7 // abo, nmi, irq
   ];
 
   // function table is at bottom
@@ -97,11 +131,57 @@ function Cpu(mem) {
     this.nmiWanted = false;
     this.aboWanted = false;
 
+    // power state
+    this.stopped = false;
+    this.waiting = false;
+
     // cycles left
     this.cyclesLeft = 7;
 
   }
   this.reset();
+
+  this.cycle = function() {
+    if(this.cyclesLeft === 0) {
+      if(this.stopped) {
+        // stopped
+        this.cyclesLeft = 1;
+      } else if(!this.waiting) {
+        // read opcode byte
+        let instr = this.mem.read((this.r[K] << 16) | this.br[PC]++);
+        this.cyclesLeft = this.cycles[instr];
+        let mode = this.modes[instr];
+        // test for interrupt
+        if((this.irqWanted && !this.i) || this.nmiWanted || this.aboWanted) {
+          this.br[PC]--;
+          if(this.aboWanted) {
+            this.aboWanted = false;
+            instr = 0x100;
+          } else if(this.nmiWanted) {
+            this.nmiWanted = false;
+            instr = 0x101;
+          } else {
+            // irq (level sensitive instead of edge sensitive)
+            instr = 0x102;
+          }
+          this.cyclesLeft = 8;
+          mode = IMP;
+        }
+        // execute the instruction
+        let adrs = this.getAdr(instr, mode);
+        this.functions[instr].call(this, adrs[0], adrs[1], instr);
+      } else {
+        // waiting on interrupt
+        if(this.abortWanted || this.irqWanted || this.nmiWanted) {
+          this.waiting = false;
+          // on next cycle, find the nmi or abort and start executing it,
+          // or continue on as a fast irq if i is 1
+        }
+        this.cyclesLeft = 1;
+      }
+    }
+    this.cyclesLeft--;
+  }
 
   this.getP = function(bFlag) {
     let val = 0;
@@ -138,7 +218,7 @@ function Cpu(mem) {
       this.n = (value & 0x80) > 0;
       return;
     }
-    this.z = value === 0;
+    this.z = (value & 0xffff) === 0;
     this.n = (value & 0x8000) > 0;
   }
 
@@ -164,7 +244,7 @@ function Cpu(mem) {
     this.br[SP]--;
   }
 
-  this.pullByte = function(old) {
+  this.pullByte = function() {
     this.br[SP]++;
     return this.mem.read(this.br[SP]);
   }
@@ -507,5 +587,240 @@ function Cpu(mem) {
     }
   }
 
+  // instruction functions
+
+  this.uni = function(adr, adrh, instr) {
+    // unimplemented
+    console.log(
+      "Uninplemented instruction: " + instr.toString(16) +
+      " reading at adrl " + adr + " and adrh " + adrh
+    );
+  }
+
+  this.adc = function(adr, adrh) {
+    // TODO: decimal mode
+    if(this.m) {
+      let value = this.mem.read(adr);
+      let result = (this.br[A] & 0xff) + value + (this.c ? 1 : 0);
+      this.v = (
+        (this.br[A] & 0x80) === (value & 0x80) &&
+        (value & 0x80) !== (result & 0x80)
+      )
+      this.c = result > 0xff;
+      this.setZandN(result, this.m);
+      this.br[A] = (this.br[A] & 0xff00) | (result & 0xff);
+    } else {
+      let value = this.mem.read(adr);
+      value |= this.mem.read(adrh) << 8;
+      this.cyclesLeft++; // 1 extra cycle if m = 0
+      let result = this.br[A] + value + (this.c ? 1 : 0);
+      this.v = (
+        (this.br[A] & 0x8000) === (value & 0x8000) &&
+        (value & 0x8000) !== (result & 0x8000)
+      )
+      this.c = result > 0xffff;
+      this.setZandN(result, this.m);
+      this.br[A] = result;
+    }
+  }
+
+  this.sbc = function(adr, adrh) {
+    // TODO: decimal mode
+    if(this.m) {
+      let value = this.mem.read(adr) ^ 0xff;
+      let result = (this.br[A] & 0xff) + value + (this.c ? 1 : 0);
+      this.v = (
+        (this.br[A] & 0x80) === (value & 0x80) &&
+        (value & 0x80) !== (result & 0x80)
+      )
+      this.c = result > 0xff;
+      this.setZandN(result, this.m);
+      this.br[A] = (this.br[A] & 0xff00) | (result & 0xff);
+    } else {
+      let value = this.mem.read(adr);
+      value |= this.mem.read(adrh) << 8;
+      value ^= 0xffff;
+      this.cyclesLeft++; // 1 extra cycle if m = 0
+      let result = this.br[A] + value + (this.c ? 1 : 0);
+      this.v = (
+        (this.br[A] & 0x8000) === (value & 0x8000) &&
+        (value & 0x8000) !== (result & 0x8000)
+      )
+      this.c = result > 0xffff;
+      this.setZandN(result, this.m);
+      this.br[A] = result;
+    }
+  }
+
+  this.cmp = function(adr, adrh) {
+    if(this.m) {
+      let value = this.mem.read(adr) ^ 0xff;
+      let result = (this.br[A] & 0xff) + value + 1;
+      this.c = result > 0xff;
+      this.setZandN(result, this.m);
+    } else {
+      let value = this.mem.read(adr);
+      value |= this.mem.read(adrh) << 8;
+      value ^= 0xffff;
+      this.cyclesLeft++; // 1 extra cycle if m = 0
+      let result = this.br[A] + value + 1;
+      this.c = result > 0xffff;
+      this.setZandN(result, this.m);
+    }
+  }
+
+  this.cpx = function(adr, adrh) {
+    if(this.x) {
+      let value = this.mem.read(adr) ^ 0xff;
+      let result = (this.br[X] & 0xff) + value + 1;
+      this.c = result > 0xff;
+      this.setZandN(result, this.x);
+    } else {
+      let value = this.mem.read(adr);
+      value |= this.mem.read(adrh) << 8;
+      value ^= 0xffff;
+      this.cyclesLeft++; // 1 extra cycle if x = 0
+      let result = this.br[X] + value + 1;
+      this.c = result > 0xffff;
+      this.setZandN(result, this.x);
+    }
+  }
+
+  this.cpy = function(adr, adrh) {
+    if(this.x) {
+      let value = this.mem.read(adr) ^ 0xff;
+      let result = (this.br[Y] & 0xff) + value + 1;
+      this.c = result > 0xff;
+      this.setZandN(result, this.x);
+    } else {
+      let value = this.mem.read(adr);
+      value |= this.mem.read(adrh) << 8;
+      value ^= 0xffff;
+      this.cyclesLeft++; // 1 extra cycle if x = 0
+      let result = this.br[Y] + value + 1;
+      this.c = result > 0xffff;
+      this.setZandN(result, this.x);
+    }
+  }
+
+  this.dec = function(adr, adrh) {
+    if(this.m) {
+      let result = (this.mem.read(adr) - 1) & 0xff;
+      this.setZandN(result, this.m);
+      this.mem.write(adr, result);
+    } else {
+      let value = this.mem.read(adr);
+      value |= this.mem.read(adrh) << 8;
+      this.cyclesLeft += 2; // 2 extra cycles if m = 0
+      let result = (value - 1) & 0xffff;
+      this.setZandN(result, this.m);
+      this.mem.write(adr, result & 0xff);
+      this.mem.write(adrh, (result & 0xff00) >> 8);
+    }
+  }
+
+  this.deca = function(adr, adrh) {
+    if(this.m) {
+      let result = ((this.br[A] & 0xff) - 1) & 0xff;
+      this.setZandN(result, this.m);
+      this.br[A] = this.br[A] & 0xff00 | result;
+    } else {
+      this.br[A]--;
+      this.setZandN(this.br[A], this.m);
+    }
+  }
+
+  this.dex = function(adr, adrh) {
+    if(this.x) {
+      let result = ((this.br[X] & 0xff) - 1) & 0xff;
+      this.setZandN(result, this.x);
+      this.br[X] = result;
+    } else {
+      this.br[X]--;
+      this.setZandN(this.br[X], this.x);
+    }
+  }
+
+  this.dey = function(adr, adrh) {
+    if(this.x) {
+      let result = ((this.br[Y] & 0xff) - 1) & 0xff;
+      this.setZandN(result, this.x);
+      this.br[Y] = result;
+    } else {
+      this.br[Y]--;
+      this.setZandN(this.br[Y], this.x);
+    }
+  }
+
+  this.inc = function(adr, adrh) {
+    if(this.m) {
+      let result = (this.mem.read(adr) + 1) & 0xff;
+      this.setZandN(result, this.m);
+      this.mem.write(adr, result);
+    } else {
+      let value = this.mem.read(adr);
+      value |= this.mem.read(adrh) << 8;
+      this.cyclesLeft += 2; // 2 extra cycles if m = 0
+      let result = (value + 1) & 0xffff;
+      this.setZandN(result, this.m);
+      this.mem.write(adr, result & 0xff);
+      this.mem.write(adrh, (result & 0xff00) >> 8);
+    }
+  }
+
+  this.inca = function(adr, adrh) {
+    if(this.m) {
+      let result = ((this.br[A] & 0xff) + 1) & 0xff;
+      this.setZandN(result, this.m);
+      this.br[A] = this.br[A] & 0xff00 | result;
+    } else {
+      this.br[A]++;
+      this.setZandN(this.br[A], this.m);
+    }
+  }
+
+  this.inx = function(adr, adrh) {
+    if(this.x) {
+      let result = ((this.br[X] & 0xff) + 1) & 0xff;
+      this.setZandN(result, this.x);
+      this.br[X] = result;
+    } else {
+      this.br[X]++;
+      this.setZandN(this.br[X], this.x);
+    }
+  }
+
+  this.iny = function(adr, adrh) {
+    if(this.x) {
+      let result = ((this.br[Y] & 0xff) + 1) & 0xff;
+      this.setZandN(result, this.x);
+      this.br[Y] = result;
+    } else {
+      this.br[Y]++;
+      this.setZandN(this.br[Y], this.x);
+    }
+  }
+
+  // function table
+  this.functions = [
+    //x0      x1        x2        x3        x4        x5        x6        x7        x8        x9        xa        xb        xc        xd        xe        xf
+    this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni,  //0x
+    this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni,  //1x
+    this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni,  //2x
+    this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni,  //3x
+    this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni,  //4x
+    this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni,  //5x
+    this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni,  //6x
+    this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni,  //7x
+    this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni,  //8x
+    this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni,  //9x
+    this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni,  //ax
+    this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni,  //bx
+    this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni,  //cx
+    this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni,  //dx
+    this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni,  //ex
+    this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni,  //fx
+    this.uni, this.uni, this.uni // abo, nmi, irq
+  ];
 
 }
