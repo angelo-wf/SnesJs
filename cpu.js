@@ -52,45 +52,43 @@ function Cpu(mem) {
 
   // modes for each instruction
   this.modes = [
-    //x0 x1   x2   x3   x4   x5   x6   x7   x8   x9   xa   xb   xc   xd   xe   xf
-    IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, //0x
-    IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, //1x
-    IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, //2x
-    IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, //3x
-    IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, //4x
-    IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, //5x
-    IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, //6x
-    IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, //7x
-    IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, //8x
-    IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, //9x
-    IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, //ax
-    IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, //bx
-    IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, //cx
-    IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, //dx
-    IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, //ex
-    IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, IMP, //fx
+    IMP, IDX, IMM, SR , DP , DP , DP , IDL, IMP, IMMm,IMP, IMP, ABS, ABS, ABS, ABL,
+    REL, IDYr,IDP, ISY, DP , DPX, DPX, ILY, IMP, ABYr,IMP, IMP, ABS, ABXr,ABX, ALX,
+    ABS, IDX, ABL, SR , DP , DP , DP , IDL, IMP, IMMm,IMP, IMP, ABS, ABS, ABS, ABL,
+    REL, IDYr,IDP, ISY, DPX, DPX, DPX, ILY, IMP, ABYr,IMP, IMP, ABXr,ABXr,ABX, ALX,
+    IMP, IDX, IMM, SR , BM , DP , DP , IDL, IMP, IMMm,IMP, IMP, ABS, ABS, ABS, ABL,
+    REL, IDYr,IDP, ISY, BM , DPX, DPX, ILY, IMP, ABYr,IMP, IMP, ABL, ABXr,ABX, ALX,
+    IMP, IDX, RLL, SR , DP , DP , DP , IDL, IMP, IMMm,IMP, IMP, IND, ABS, ABS, ABL,
+    REL, IDYr,IDP, ISY, DPX, DPX, DPX, ILY, IMP, ABYr,IMP, IMP, IAX, ABXr,ABX, ALX,
+    REL, IDX, RLL, SR , DP , DP , DP , IDL, IMP, IMMm,IMP, IMP, ABS, ABS, ABS, ABL,
+    REL, IDY, IDP, ISY, DPX, DPX, DPY, ILY, IMP, ABY, IMP, IMP, ABS, ABX, ABX, ALX,
+    IMMx,IDX, IMMx,SR , DP , DP , DP , IDL, IMP, IMMm,IMP, IMP, ABS, ABS, ABS, ABL,
+    REL, IDYr,IDP, ISY, DPX, DPX, DPY, ILY, IMP, ABYr,IMP, IMP, ABXr,ABXr,ABYr,ALX,
+    IMMx,IDX, IMM, SR , DP , DP , DP , IDL, IMP, IMMm,IMP, IMP, ABS, ABS, ABS, ABL,
+    REL, IDYr,IDP, ISY, DP , DPX, DPX, ILY, IMP, ABYr,IMP, IMP, IAL, ABXr,ABX, ALX,
+    IMMx,IDX, IMM, SR , DP , DP , DP , IDL, IMP, IMMm,IMP, IMP, ABS, ABS, ABS, ABL,
+    REL, IDYr,IDP, ISY, IMMl,DPX, DPX, ILY, IMP, ABYr,IMP, IMP, IAX, ABXr,ABX, ALX
     IMP, IMP, IMP // abo, nmi, irq
   ];
 
   // cycles for each instruction
   this.cycles = [
-    //0x1 x2 x3 x4 x5 x6 x7 x8 x9 xa xb xc xd xe xf
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, //0x
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, //1x
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, //2x
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, //3x
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, //4x
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, //5x
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, //6x
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, //7x
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, //8x
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, //9x
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, //ax
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, //bx
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, //cx
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, //dx
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, //ex
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1  //fx
+    7, 6, 7, 4, 5, 3, 5, 6, 3, 2, 2, 4, 6, 4, 6, 5,
+    2, 5, 5, 7, 5, 4, 6, 6, 2, 4, 2, 2, 6, 4, 7, 5,
+    6, 6, 8, 4, 3, 3, 5, 6, 4, 2, 2, 5, 4, 4, 6, 5,
+    2, 5, 5, 7, 4, 4, 6, 6, 2, 4, 2, 2, 4, 4, 7, 5,
+    6, 6, 2, 4, 7, 3, 5, 6, 3, 2, 2, 3, 3, 4, 6, 5,
+    2, 5, 5, 7, 7, 4, 6, 6, 2, 4, 3, 2, 4, 4, 7, 5,
+    6, 6, 6, 4, 3, 3, 5, 6, 4, 2, 2, 6, 5, 4, 6, 5,
+    2, 5, 5, 7, 4, 4, 6, 6, 2, 4, 4, 2, 6, 4, 7, 5,
+    3, 6, 4, 4, 3, 3, 3, 6, 2, 2, 2, 3, 4, 4, 4, 5,
+    2, 6, 5, 7, 4, 4, 4, 6, 2, 5, 2, 2, 4, 5, 5, 5,
+    2, 6, 2, 4, 3, 3, 3, 6, 2, 2, 2, 4, 4, 4, 4, 5,
+    2, 5, 5, 7, 4, 4, 4, 6, 2, 4, 2, 2, 4, 4, 4, 5,
+    2, 6, 3, 4, 3, 3, 5, 6, 2, 2, 2, 3, 4, 4, 6, 5,
+    2, 5, 5, 7, 6, 4, 6, 6, 2, 4, 3, 3, 6, 4, 7, 5,
+    2, 6, 3, 4, 3, 3, 5, 6, 2, 2, 2, 3, 4, 4, 6, 5,
+    2, 5, 5, 7, 5, 4, 6, 6, 2, 4, 4, 2, 8, 4, 7, 5,
     7, 7, 7 // abo, nmi, irq
   ];
 
@@ -803,24 +801,23 @@ function Cpu(mem) {
 
   // function table
   this.functions = [
-    //x0      x1        x2        x3        x4        x5        x6        x7        x8        x9        xa        xb        xc        xd        xe        xf
-    this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni,  //0x
-    this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni,  //1x
-    this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni,  //2x
-    this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni,  //3x
-    this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni,  //4x
-    this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni,  //5x
-    this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni,  //6x
-    this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni,  //7x
-    this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni,  //8x
-    this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni,  //9x
-    this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni,  //ax
-    this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni,  //bx
-    this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni,  //cx
-    this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni,  //dx
-    this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni,  //ex
-    this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni, this.uni,  //fx
-    this.uni, this.uni, this.uni // abo, nmi, irq
+    this.brk, this.ora, this.cop, this.ora, this.tsb, this.ora, this.asl, this.ora, this.php, this.ora, this.asl, this.phd, this.tsb, this.ora, this.asl, this.ora,
+    this.bpl, this.ora, this.ora, this.ora, this.trb, this.ora, this.asl, this.ora, this.clc, this.ora, this.inc, this.tcs, this.trb, this.ora, this.asl, this.ora,
+    this.jsr, this.and, this.jsl, this.and, this.bit, this.and, this.rol, this.and, this.plp, this.and, this.rol, this.pld, this.bit, this.and, this.rol, this.and,
+    this.bmi, this.and, this.and, this.and, this.bit, this.and, this.rol, this.and, this.sec, this.and, this.dec, this.tsc, this.bit, this.and, this.rol, this.and,
+    this.rti, this.eor, this.wdm, this.eor, this.mvp, this.eor, this.lsr, this.eor, this.pha, this.eor, this.lsr, this.phk, this.jmp, this.eor, this.lsr, this.eor,
+    this.bvc, this.eor, this.eor, this.eor, this.mvn, this.eor, this.lsr, this.eor, this.cli, this.eor, this.phy, this.tcd, this.jmp, this.eor, this.lsr, this.eor,
+    this.rts, this.adc, this.per, this.adc, this.stz, this.adc, this.ror, this.adc, this.pla, this.adc, this.ror, this.rtl, this.jmp, this.adc, this.ror, this.adc,
+    this.bvs, this.adc, this.adc, this.adc, this.stz, this.adc, this.ror, this.adc, this.sei, this.adc, this.ply, this.tdc, this.jmp, this.adc, this.ror, this.adc,
+    this.bra, this.sta, this.brl, this.sta, this.sty, this.sta, this.stx, this.sta, this.dey, this.bit, this.txa, this.phb, this.sty, this.sta, this.stx, this.sta,
+    this.bcc, this.sta, this.sta, this.sta, this.sty, this.sta, this.stx, this.sta, this.tya, this.sta, this.txs, this.txy, this.stz, this.sta, this.stz, this.sta,
+    this.ldy, this.lda, this.ldx, this.lda, this.ldy, this.lda, this.ldx, this.lda, this.tay, this.lda, this.tax, this.plb, this.ldy, this.lda, this.ldx, this.lda,
+    this.bcs, this.lda, this.lda, this.lda, this.ldy, this.lda, this.ldx, this.lda, this.clv, this.lda, this.tsx, this.tyx, this.ldy, this.lda, this.ldx, this.lda,
+    this.cpy, this.cmp, this.sep, this.cmp, this.cpy, this.cmp, this.dec, this.cmp, this.iny, this.cmp, this.dex, this.wai, this.cpy, this.cmp, this.dec, this.cmp,
+    this.bne, this.cmp, this.cmp, this.cmp, this.pei, this.cmp, this.dec, this.cmp, this.cld, this.cmp, this.phx, this.stp, this.jmp, this.cmp, this.dec, this.cmp,
+    this.cpx, this.sbc, this.rep, this.sbc, this.cpx, this.sbc, this.inc, this.sbc, this.inx, this.sbc, this.nop, this.xba, this.cpx, this.sbc, this.inc, this.sbc,
+    this.beq, this.sbc, this.sbc, this.sbc, this.pea, this.sbc, this.inc, this.sbc, this.sed, this.sbc, this.plx, this.xce, this.jsr, this.sbc, this.inc, this.sbc,
+    this.abo, this.nmi, this.irq // abo, nmi, irq
   ];
 
 }
