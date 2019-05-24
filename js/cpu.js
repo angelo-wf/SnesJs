@@ -67,7 +67,7 @@ function Cpu(mem) {
     IMMx,IDX, IMM, SR , DP , DP , DP , IDL, IMP, IMMm,IMP, IMP, ABS, ABS, ABS, ABL,
     REL, IDYr,IDP, ISY, DP , DPX, DPX, ILY, IMP, ABYr,IMP, IMP, IAL, ABXr,ABX, ALX,
     IMMx,IDX, IMM, SR , DP , DP , DP , IDL, IMP, IMMm,IMP, IMP, ABS, ABS, ABS, ABL,
-    REL, IDYr,IDP, ISY, IMMl,DPX, DPX, ILY, IMP, ABYr,IMP, IMP, IAX, ABXr,ABX, ALX
+    REL, IDYr,IDP, ISY, IMMl,DPX, DPX, ILY, IMP, ABYr,IMP, IMP, IAX, ABXr,ABX, ALX,
     IMP, IMP, IMP // abo, nmi, irq
   ];
 
@@ -1565,9 +1565,9 @@ function Cpu(mem) {
     this.bcc, this.sta, this.sta, this.sta, this.sty, this.sta, this.stx, this.sta, this.tya, this.sta, this.txs, this.txy, this.stz, this.sta, this.stz, this.sta,
     this.ldy, this.lda, this.ldx, this.lda, this.ldy, this.lda, this.ldx, this.lda, this.tay, this.lda, this.tax, this.plb, this.ldy, this.lda, this.ldx, this.lda,
     this.bcs, this.lda, this.lda, this.lda, this.ldy, this.lda, this.ldx, this.lda, this.clv, this.lda, this.tsx, this.tyx, this.ldy, this.lda, this.ldx, this.lda,
-    this.cpy, this.cmp, this.sep, this.cmp, this.cpy, this.cmp, this.dec, this.cmp, this.iny, this.cmp, this.dex, this.wai, this.cpy, this.cmp, this.dec, this.cmp,
+    this.cpy, this.cmp, this.rep, this.cmp, this.cpy, this.cmp, this.dec, this.cmp, this.iny, this.cmp, this.dex, this.wai, this.cpy, this.cmp, this.dec, this.cmp,
     this.bne, this.cmp, this.cmp, this.cmp, this.pei, this.cmp, this.dec, this.cmp, this.cld, this.cmp, this.phx, this.stp, this.jmp, this.cmp, this.dec, this.cmp,
-    this.cpx, this.sbc, this.rep, this.sbc, this.cpx, this.sbc, this.inc, this.sbc, this.inx, this.sbc, this.nop, this.xba, this.cpx, this.sbc, this.inc, this.sbc,
+    this.cpx, this.sbc, this.sep, this.sbc, this.cpx, this.sbc, this.inc, this.sbc, this.inx, this.sbc, this.nop, this.xba, this.cpx, this.sbc, this.inc, this.sbc,
     this.beq, this.sbc, this.sbc, this.sbc, this.pea, this.sbc, this.inc, this.sbc, this.sed, this.sbc, this.plx, this.xce, this.jsr, this.sbc, this.inc, this.sbc,
     this.abo, this.nmi, this.irq // abo, nmi, irq
   ];

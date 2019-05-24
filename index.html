@@ -1,0 +1,28 @@
+<!doctype html>
+<html>
+<head>
+  <link rel="stylesheet" type="text/css" href="style.css">
+  <title>SnesJS</title>
+</head>
+<body>
+  <input id="rom" type="file">
+  <button id="pause">Pause</button>
+  <button id="reset">Reset</button>
+  <button id="hardreset">Power cycle</button>
+  <button id="runframe">Run 1 frame</button><br>
+  <canvas id="output"></canvas>
+  <pre id="log"></pre>
+  <p>
+    SnesJs, by elzo_d.<br>
+    Source on <a href="https://github.com/elzo-d/SnesJs">Github</a>.
+  </p>
+
+  <script src="lib/zip.js"></script>
+  <script src="lib/inflate.js"></script>
+
+  <script src="js/cpu.js"></script>
+
+  <script src="js/main.js"></script>
+
+</body>
+</html>
