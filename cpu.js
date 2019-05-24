@@ -162,12 +162,17 @@ function Cpu(mem) {
             // irq (level sensitive instead of edge sensitive)
             instr = 0x102;
           }
-          this.cyclesLeft = 8;
-          mode = IMP;
+          this.cyclesLeft = this.cycles[instr];
+          mode = this.modes[instr];
         }
         // execute the instruction
         let adrs = this.getAdr(instr, mode);
-        this.functions[instr].call(this, adrs[0], adrs[1], instr);
+        // TEMP: log unknown instruction
+        if(this.functions[instr] === undefined) {
+          this.uni(adrs[0], adrs[1], instr);
+        } else {
+          this.functions[instr].call(this, adrs[0], adrs[1]);
+        }
       } else {
         // waiting on interrupt
         if(this.abortWanted || this.irqWanted || this.nmiWanted) {
@@ -245,6 +250,28 @@ function Cpu(mem) {
   this.pullByte = function() {
     this.br[SP]++;
     return this.mem.read(this.br[SP]);
+  }
+
+  this.pushWord = function(value) {
+    this.pushByte((value & 0xff00) >> 8);
+    this.pushByte(value & 0xff);
+  }
+
+  this.pullWord = function() {
+    let value = this.pullByte();
+    value |= this.pullByte() << 8;
+    return value;
+  }
+
+  this.readWord = function(adr, adrh) {
+    let value = this.mem.read(adr);
+    value |= this.mem.read(adrh) << 8;
+    return value;
+  }
+
+  this.writeWord = function(adr, adrh, result) {
+    this.mem.write(adr, result & 0xff);
+    this.mem.write(adrh, (result & 0xff00) >> 8);
   }
 
   this.getAdr = function(opcode, mode) {
@@ -591,7 +618,7 @@ function Cpu(mem) {
     // unimplemented
     console.log(
       "Uninplemented instruction: " + instr.toString(16) +
-      " reading at adrl " + adr + " and adrh " + adrh
+      " reading at adrl " + adr.toString(16) + " and adrh " + adrh.toString(16)
     );
   }
 
@@ -608,8 +635,7 @@ function Cpu(mem) {
       this.setZandN(result, this.m);
       this.br[A] = (this.br[A] & 0xff00) | (result & 0xff);
     } else {
-      let value = this.mem.read(adr);
-      value |= this.mem.read(adrh) << 8;
+      let value = this.readWord(adr, adrh);
       this.cyclesLeft++; // 1 extra cycle if m = 0
       let result = this.br[A] + value + (this.c ? 1 : 0);
       this.v = (
@@ -635,8 +661,7 @@ function Cpu(mem) {
       this.setZandN(result, this.m);
       this.br[A] = (this.br[A] & 0xff00) | (result & 0xff);
     } else {
-      let value = this.mem.read(adr);
-      value |= this.mem.read(adrh) << 8;
+      let value = this.readWord(adr, adrh);
       value ^= 0xffff;
       this.cyclesLeft++; // 1 extra cycle if m = 0
       let result = this.br[A] + value + (this.c ? 1 : 0);
@@ -657,8 +682,7 @@ function Cpu(mem) {
       this.c = result > 0xff;
       this.setZandN(result, this.m);
     } else {
-      let value = this.mem.read(adr);
-      value |= this.mem.read(adrh) << 8;
+      let value = this.readWord(adr, adrh);
       value ^= 0xffff;
       this.cyclesLeft++; // 1 extra cycle if m = 0
       let result = this.br[A] + value + 1;
@@ -674,8 +698,7 @@ function Cpu(mem) {
       this.c = result > 0xff;
       this.setZandN(result, this.x);
     } else {
-      let value = this.mem.read(adr);
-      value |= this.mem.read(adrh) << 8;
+      let value = this.readWord(adr, adrh);
       value ^= 0xffff;
       this.cyclesLeft++; // 1 extra cycle if x = 0
       let result = this.br[X] + value + 1;
@@ -691,8 +714,7 @@ function Cpu(mem) {
       this.c = result > 0xff;
       this.setZandN(result, this.x);
     } else {
-      let value = this.mem.read(adr);
-      value |= this.mem.read(adrh) << 8;
+      let value = this.readWord(adr, adrh);
       value ^= 0xffff;
       this.cyclesLeft++; // 1 extra cycle if x = 0
       let result = this.br[Y] + value + 1;
@@ -707,13 +729,11 @@ function Cpu(mem) {
       this.setZandN(result, this.m);
       this.mem.write(adr, result);
     } else {
-      let value = this.mem.read(adr);
-      value |= this.mem.read(adrh) << 8;
+      let value = this.readWord(adr, adrh);
       this.cyclesLeft += 2; // 2 extra cycles if m = 0
       let result = (value - 1) & 0xffff;
       this.setZandN(result, this.m);
-      this.mem.write(adr, result & 0xff);
-      this.mem.write(adrh, (result & 0xff00) >> 8);
+      this.writeWord(adr, adrh, result);
     }
   }
 
@@ -756,13 +776,11 @@ function Cpu(mem) {
       this.setZandN(result, this.m);
       this.mem.write(adr, result);
     } else {
-      let value = this.mem.read(adr);
-      value |= this.mem.read(adrh) << 8;
+      let value = this.readWord(adr, adrh);
       this.cyclesLeft += 2; // 2 extra cycles if m = 0
       let result = (value + 1) & 0xffff;
       this.setZandN(result, this.m);
-      this.mem.write(adr, result & 0xff);
-      this.mem.write(adrh, (result & 0xff00) >> 8);
+      this.writeWord(adr, adrh, result);
     }
   }
 
@@ -799,17 +817,751 @@ function Cpu(mem) {
     }
   }
 
+  this.and = function(adr, adrh) {
+    if(this.m) {
+      let value = this.mem.read(adr);
+      this.br[A] &= value;
+      this.setZandN(this.br[A], this.m);
+    } else {
+      let value = this.readWord(adr, adrh);
+      this.cyclesLeft++; // 1 extra cycle if m = 0
+      this.br[A] &= value;
+      this.setZandN(this.br[A], this.m);
+    }
+  }
+
+  this.eor = function(adr, adrh) {
+    if(this.m) {
+      let value = this.mem.read(adr);
+      this.br[A] ^= value;
+      this.setZandN(this.br[A], this.m);
+    } else {
+      let value = this.readWord(adr, adrh);
+      this.cyclesLeft++; // 1 extra cycle if m = 0
+      this.br[A] ^= value;
+      this.setZandN(this.br[A], this.m);
+    }
+  }
+
+  this.ora = function(adr, adrh) {
+    if(this.m) {
+      let value = this.mem.read(adr);
+      this.br[A] |= value;
+      this.setZandN(this.br[A], this.m);
+    } else {
+      let value = this.readWord(adr, adrh);
+      this.cyclesLeft++; // 1 extra cycle if m = 0
+      this.br[A] |= value;
+      this.setZandN(this.br[A], this.m);
+    }
+  }
+
+  this.bit = function(adr, adrh) {
+    if(this.m) {
+      let value = this.mem.read(adr);
+      let result = (this.br[A] & 0xff) & value;
+      this.z = result === 0;
+      this.n = (value & 0x80) > 0;
+      this.v = (value & 0x40) > 0;
+    } else {
+      let value = this.readWord(adr, adrh);
+      this.cyclesLeft++; // 1 extra cycle if m = 0
+      let result = this.br[A] & value;
+      this.z = result === 0;
+      this.n = (value & 0x8000) > 0;
+      this.v = (value & 0x4000) > 0;
+    }
+  }
+
+  this.biti = function(adr, adrh) {
+    if(this.m) {
+      let value = this.mem.read(adr);
+      let result = (this.br[A] & 0xff) & value;
+      this.z = result === 0;
+    } else {
+      let value = this.readWord(adr, adrh);
+      this.cyclesLeft++; // 1 extra cycle if m = 0
+      let result = this.br[A] & value;
+      this.z = result === 0;
+    }
+  }
+
+  this.trb = function(adr, adrh) {
+    if(this.m) {
+      let value = this.mem.read(adr);
+      let result = (this.br[A] & 0xff) & value;
+      value = (value & ~(this.br[A] & 0xff)) & 0xff;
+      this.z = result === 0;
+      this.mem.write(adr, value);
+    } else {
+      let value = this.readWord(adr, adrh);
+      this.cyclesLeft += 2 // 2 extra cycles if m = 0
+      let result = this.br[A] & value;
+      value = (value & ~this.br[A]) & 0xffff;
+      this.z = result === 0;
+      this.writeWord(adr, adrh, result);
+    }
+  }
+
+  this.tsb = function(adr, adrh) {
+    if(this.m) {
+      let value = this.mem.read(adr);
+      let result = (this.br[A] & 0xff) & value;
+      value = (value | (this.br[A] & 0xff)) & 0xff;
+      this.z = result === 0;
+      this.mem.write(adr, value);
+    } else {
+      let value = this.readWord(adr, adrh);
+      this.cyclesLeft += 2 // 2 extra cycles if m = 0
+      let result = this.br[A] & value;
+      value = (value | this.br[A]) & 0xffff;
+      this.z = result === 0;
+      this.writeWord(adr, adrh, result);
+    }
+  }
+
+  this.asl = function(adr, adrh) {
+    if(this.m) {
+      let value = this.mem.read(adr);
+      this.c = (value & 0x80) > 0;
+      value <<= 1;
+      this.setZandN(value, this.m);
+      this.mem.write(adr, value);
+    } else {
+      let value = this.readWord(adr, adrh);
+      this.cyclesLeft += 2 // 2 extra cycles if m = 0
+      this.c = (value & 0x8000) > 0;
+      value <<= 1;
+      this.setZandN(value, this.m);
+      this.writeWord(adr, adrh, value);
+    }
+  }
+
+  this.asla = function(adr, adrh) {
+    if(this.m) {
+      let value = this.br[A] & 0xff;
+      this.c = (value & 0x80) > 0;
+      value <<= 1;
+      this.setZandN(value, this.m);
+      this.br[A] = (this.br[A] & 0xff00) | (value & 0xff);
+    } else {
+      this.c = (this.br[A] & 0x8000) > 0;
+      this.cyclesLeft += 2 // 2 extra cycles if m = 0
+      this.br[A] <<= 1;
+      this.setZandN(this.br[A], this.m);
+    }
+  }
+
+  this.lsr = function(adr, adrh) {
+    if(this.m) {
+      let value = this.mem.read(adr);
+      this.c = (value & 0x1) > 0;
+      value >>= 1;
+      this.setZandN(value, this.m);
+      this.mem.write(adr, value);
+    } else {
+      let value = this.readWord(adr, adrh);
+      this.cyclesLeft += 2 // 2 extra cycles if m = 0
+      this.c = (value & 0x1) > 0;
+      value >>= 1;
+      this.setZandN(value, this.m);
+      this.writeWord(adr, adrh, value);
+    }
+  }
+
+  this.lsra = function(adr, adrh) {
+    if(this.m) {
+      let value = this.br[A] & 0xff;
+      this.c = (value & 0x1) > 0;
+      value >>= 1;
+      this.setZandN(value, this.m);
+      this.br[A] = (this.br[A] & 0xff00) | (value & 0xff);
+    } else {
+      this.c = (this.br[A] & 0x1) > 0;
+      this.cyclesLeft += 2 // 2 extra cycles if m = 0
+      this.br[A] >>= 1;
+      this.setZandN(this.br[A], this.m);
+    }
+  }
+
+  this.rol = function(adr, adrh) {
+    if(this.m) {
+      let value = this.mem.read(adr);
+      value = (value << 1) | (this.c ? 1 : 0);
+      this.c = (value & 0x100) > 0;
+      this.setZandN(value, this.m);
+      this.mem.write(adr, value);
+    } else {
+      let value = this.readWord(adr, adrh);
+      this.cyclesLeft += 2 // 2 extra cycles if m = 0
+      value = (value << 1) | (this.c ? 1 : 0);
+      this.c = (value & 0x10000) > 0;
+      this.setZandN(value, this.m);
+      this.writeWord(adr, adrh, value);
+    }
+  }
+
+  this.rola = function(adr, adrh) {
+    if(this.m) {
+      let value = this.br[A] & 0xff;
+      value = (value << 1) | (this.c ? 1 : 0);
+      this.c = (value & 0x100) > 0;
+      this.setZandN(value, this.m);
+      this.br[A] = (this.br[A] & 0xff00) | (value & 0xff);
+    } else {
+      this.cyclesLeft += 2 // 2 extra cycles if m = 0
+      value = (this.br[A] << 1) | (this.c ? 1 : 0);
+      this.c = (value & 0x10000) > 0;
+      this.setZandN(value, this.m);
+      this.br[A] = value;
+    }
+  }
+
+  this.ror = function(adr, adrh) {
+    if(this.m) {
+      let value = this.mem.read(adr);
+      let carry = value & 0x1;
+      value = (value >> 1) | (this.c ? 0x80 : 0);
+      this.c = carry > 0;
+      this.setZandN(value, this.m);
+      this.mem.write(adr, value);
+    } else {
+      let value = this.readWord(adr, adrh);
+      this.cyclesLeft += 2 // 2 extra cycles if m = 0
+      let carry = value & 0x1;
+      value = (value >> 1) | (this.c ? 0x8000 : 0);
+      this.c = carry > 0;
+      this.setZandN(value, this.m);
+      this.writeWord(adr, adrh, value);
+    }
+  }
+
+  this.rora = function(adr, adrh) {
+    if(this.m) {
+      let value = this.br[A] & 0xff;
+      let carry = value & 0x1;
+      value = (value >> 1) | (this.c ? 0x80 : 0);
+      this.c = carry > 0;
+      this.setZandN(value, this.m);
+      this.br[A] = (this.br[A] & 0xff00) | (value & 0xff);
+    } else {
+      this.cyclesLeft += 2 // 2 extra cycles if m = 0
+      let carry = this.br[A] & 0x1;
+      value = (this.br[A] >> 1) | (this.c ? 0x8000 : 0);
+      this.c = carry > 0;
+      this.setZandN(value, this.m);
+      this.br[A] = value;
+    }
+  }
+
+  this.bcc = function(adr, adrh) {
+    this.doBranch(!this.c, adr);
+  }
+
+  this.bcs = function(adr, adrh) {
+    this.doBranch(this.c, adr);
+  }
+
+  this.beq = function(adr, adrh) {
+    this.doBranch(this.z, adr);
+  }
+
+  this.bmi = function(adr, adrh) {
+    this.doBranch(this.n, adr);
+  }
+
+  this.bne = function(adr, adrh) {
+    this.doBranch(!this.z, adr);
+  }
+
+  this.bpl = function(adr, adrh) {
+    this.doBranch(!this.n, adr);
+  }
+
+  this.bra = function(adr, adrh) {
+    this.br[PC] += adr;
+  }
+
+  this.bvc = function(adr, adrh) {
+    this.doBranch(!this.v, adr);
+  }
+
+  this.bvs = function(adr, adrh) {
+    this.doBranch(this.v, adr);
+  }
+
+  this.brl = function(adr, adrh) {
+    this.br[PC] += adr;
+  }
+
+  this.jmp = function(adr, adrh) {
+    this.r[K] = (adr & 0xff0000) >> 16;
+    this.br[PC] = adr & 0xffff;
+  }
+
+  this.jsl = function(adr, adrh) {
+    let pushPc = (this.br[PC] - 1) & 0xffff;
+    this.pushByte(this.r[K]);
+    this.pushWord(pushPc);
+    this.r[K] = (adr & 0xff0000) >> 16;
+    this.br[PC] = adr & 0xffff;
+  }
+
+  this.jsr = function(adr, adrh) {
+    let pushPc = (this.br[PC] - 1) & 0xffff;
+    this.pushWord(pushPc);
+    this.br[PC] = adr & 0xffff;
+  }
+
+  this.rtl = function(adr, adrh) {
+    let pullPc = this.pullWord();
+    this.r[K] = this.pullByte();
+    this.br[PC] = pullPc + 1;
+  }
+
+  this.rts = function(adr, adrh) {
+    let pullPc = this.pullWord();
+    this.br[PC] = pullPc + 1;
+  }
+
+  this.brk = function(adr, adrh) {
+    let pushPc = (this.br[PC] + 1) & 0xffff;
+    this.pushByte(this.r[K]);
+    this.pushWord(pushPc);
+    this.pushByte(this.getP());
+    this.cyclesLeft++; // native mode: 1 extra cycle
+    this.i = true;
+    this.d = false;
+    this.br[PC] = this.mem.read(0xffe6) | (this.mem.read(0xffe7) << 8);
+  }
+
+  this.cop = function(adr, adrh) {
+    this.pushByte(this.r[K]);
+    this.pushWord(this.br[PC]);
+    this.pushByte(this.getP());
+    this.cyclesLeft++; // native mode: 1 extra cycle
+    this.i = true;
+    this.d = false;
+    this.br[PC] = this.mem.read(0xffe4) | (this.mem.read(0xffe5) << 8);
+  }
+
+  this.abo = function(adr, adrh) {
+    this.pushByte(this.r[K]);
+    this.pushWord(this.br[PC]);
+    this.pushByte(this.getP());
+    this.cyclesLeft++; // native mode: 1 extra cycle
+    this.i = true;
+    this.d = false;
+    this.br[PC] = this.mem.read(0xffe8) | (this.mem.read(0xffe9) << 8);
+  }
+
+  this.nmi = function(adr, adrh) {
+    this.pushByte(this.r[K]);
+    this.pushWord(this.br[PC]);
+    this.pushByte(this.getP());
+    this.cyclesLeft++; // native mode: 1 extra cycle
+    this.i = true;
+    this.d = false;
+    this.br[PC] = this.mem.read(0xffea) | (this.mem.read(0xffeb) << 8);
+  }
+
+  this.irq = function(adr, adrh) {
+    this.pushByte(this.r[K]);
+    this.pushWord(this.br[PC]);
+    this.pushByte(this.getP());
+    this.cyclesLeft++; // native mode: 1 extra cycle
+    this.i = true;
+    this.d = false;
+    this.br[PC] = this.mem.read(0xffee) | (this.mem.read(0xffef) << 8);
+  }
+
+  this.rti = function(adr, adrh) {
+    this.setP(this.pullByte());
+    this.cyclesLeft++; // native mode: 1 extra cycle
+    let pullPc = this.pullWord();
+    this.r[K] = this.pullByte();
+    this.br[PC] = pullPc;
+  }
+
+  this.clc = function(adr, adrh) {
+    this.c = false;
+  }
+
+  this.cld = function(adr, adrh) {
+    this.d = false;
+  }
+
+  this.cli = function(adr, adrh) {
+    this.i = false;
+  }
+
+  this.clv = function(adr, adrh) {
+    this.v = false;
+  }
+
+  this.sec = function(adr, adrh) {
+    this.c = true;
+  }
+
+  this.sed = function(adr, adrh) {
+    this.d = true;
+  }
+
+  this.sei = function(adr, adrh) {
+    this.i = true;
+  }
+
+  this.rep = function(adr, adrh) {
+    let value = this.mem.read(adr);
+    this.setP(this.getP() & ~value);
+  }
+
+  this.sep = function(adr, adrh) {
+    let value = this.mem.read(adr);
+    this.setP(this.getP() | value);
+  }
+
+  this.lda = function(adr, adrh) {
+    if(this.m) {
+      let value = this.mem.read(adr);
+      this.br[A] = (this.br[A] & 0xff00) | (value & 0xff);
+      this.setZandN(value, this.m);
+    } else {
+      this.cyclesLeft++; // m = 0: 1 extra cycle
+      this.br[A] = this.readWord(adr, adrh);
+      this.setZandN(this.br[A], this.m);
+    }
+  }
+
+  this.ldx = function(adr, adrh) {
+    if(this.x) {
+      this.br[X] = this.mem.read(adr);
+      this.setZandN(this.br[X], this.x);
+    } else {
+      this.cyclesLeft++; // x = 0: 1 extra cycle
+      this.br[X] = this.readWord(adr, adrh);
+      this.setZandN(this.br[X], this.x);
+    }
+  }
+
+  this.ldy = function(adr, adrh) {
+    if(this.x) {
+      this.br[Y] = this.mem.read(adr);
+      this.setZandN(this.br[Y], this.x);
+    } else {
+      this.cyclesLeft++; // x = 0: 1 extra cycle
+      this.br[Y] = this.readWord(adr, adrh);
+      this.setZandN(this.br[Y], this.x);
+    }
+  }
+
+  this.sta = function(adr, adrh) {
+    if(this.m) {
+      this.mem.write(adr, this.br[A] & 0xff);
+    } else {
+      this.cyclesLeft++; // m = 0: 1 extra cycle
+      this.writeWord(adr, adrh, this.br[A]);
+    }
+  }
+
+  this.stx = function(adr, adrh) {
+    if(this.x) {
+      this.mem.write(adr, this.br[X] & 0xff);
+    } else {
+      this.cyclesLeft++; // x = 0: 1 extra cycle
+      this.writeWord(adr, adrh, this.br[X]);
+    }
+  }
+
+  this.sty = function(adr, adrh) {
+    if(this.x) {
+      this.mem.write(adr, this.br[Y] & 0xff);
+    } else {
+      this.cyclesLeft++; // x = 0: 1 extra cycle
+      this.writeWord(adr, adrh, this.br[Y]);
+    }
+  }
+
+  this.stz = function(adr, adrh) {
+    if(this.m) {
+      this.mem.write(adr, 0);
+    } else {
+      this.cyclesLeft++; // m = 0: 1 extra cycle
+      this.writeWord(adr, adrh, 0);
+    }
+  }
+
+  this.mvn = function(adr, adrh) {
+    this.r[DBR] = adr;
+    this.mem.write(
+      adr << 16 | this.br[Y],
+      this.mem.read(adrh << 16 | this.br[X])
+    );
+    this.br[A]--;
+    this.br[X]++;
+    this.br[Y]++;
+    if(this.br[A] !== 0xffff) {
+      this.br[PC] -= 3;
+    }
+    if(this.x) {
+      this.br[X] & 0xff;
+      this.br[Y] & 0xff;
+    }
+  }
+
+  this.mvp = function(adr, adrh) {
+    this.r[DBR] = adr;
+    this.mem.write(
+      adr << 16 | this.br[Y],
+      this.mem.read(adrh << 16 | this.br[X])
+    );
+    this.br[A]--;
+    this.br[X]--;
+    this.br[Y]--;
+    if(this.br[A] !== 0xffff) {
+      this.br[PC] -= 3;
+    }
+    if(this.x) {
+      this.br[X] & 0xff;
+      this.br[Y] & 0xff;
+    }
+  }
+
+  this.nop = function(adr, adrh) {
+    // no operation
+  }
+
+  this.wdm = function(adr, adrh) {
+    // no operation
+  }
+
+  this.pea = function(adr, adrh) {
+    this.pushWord(this.readWord(adr, adrh));
+  }
+
+  this.pei = function(adr, adrh) {
+    this.pushWord(this.readWord(adr, adrh));
+  }
+
+  this.per = function(adr, adrh) {
+    this.pushWord((this.br[PC] + adr) & 0xffff);
+  }
+
+  this.pha = function(adr, adrh) {
+    if(this.m) {
+      this.pushByte(this.br[A] & 0xff);
+    } else {
+      this.cyclesLeft++; // m = 0: 1 extra cycle
+      this.pushWord(this.br[A]);
+    }
+  }
+
+  this.phx = function(adr, adrh) {
+    if(this.x) {
+      this.pushByte(this.br[X] & 0xff);
+    } else {
+      this.cyclesLeft++; // x = 0: 1 extra cycle
+      this.pushWord(this.br[X]);
+    }
+  }
+
+  this.phy = function(adr, adrh) {
+    if(this.x) {
+      this.pushByte(this.br[Y] & 0xff);
+    } else {
+      this.cyclesLeft++; // x = 0: 1 extra cycle
+      this.pushWord(this.br[Y]);
+    }
+  }
+
+  this.pla = function(adr, adrh) {
+    if(this.m) {
+      this.br[A] = (this.br[A] & 0xff00) | (this.pullByte() & 0xff);
+      this.setZandN(this.br[A], this.m);
+    } else {
+      this.cyclesLeft++; // m = 0: 1 extra cycle
+      this.br[A] = this.pullWord();
+      this.setZandN(this.br[A], this.m);
+    }
+  }
+
+  this.plx = function(adr, adrh) {
+    if(this.x) {
+      this.br[X] = this.pullByte();
+      this.setZandN(this.br[X], this.m);
+    } else {
+      this.cyclesLeft++; // x = 0: 1 extra cycle
+      this.br[X] = this.pullWord();
+      this.setZandN(this.br[X], this.m);
+    }
+  }
+
+  this.ply = function(adr, adrh) {
+    if(this.x) {
+      this.br[Y] = this.pullByte();
+      this.setZandN(this.br[Y], this.m);
+    } else {
+      this.cyclesLeft++; // x = 0: 1 extra cycle
+      this.br[Y] = this.pullWord();
+      this.setZandN(this.br[Y], this.m);
+    }
+  }
+
+  this.phb = function(adr, adrh) {
+    this.pushByte(this.r[DBR]);
+  }
+
+  this.phd = function(adr, adrh) {
+    this.pushWord(this.br[DPR]);
+  }
+
+  this.phk = function(adr, adrh) {
+    this.pushByte(this.r[K]);
+  }
+
+  this.php = function(adr, adrh) {
+    this.pushByte(this.getP());
+  }
+
+  this.plb = function(adr, adrh) {
+    this.r[DBR] = this.pullByte();
+    this.setZandN(this.r[DBR], true);
+  }
+
+  this.pld = function(adr, adrh) {
+    this.br[DPR] = this.pullWord();
+    this.setZandN(this.br[DPR], false);
+  }
+
+  this.plp = function(adr, adrh) {
+    this.setP(this.pullByte());
+  }
+
+  this.stp = function(adr, adrh) {
+    this.stopped = true;
+  }
+
+  this.wai = function(adr, adrh) {
+    this.waiting = true;
+  }
+
+  this.tax = function(adr, adrh) {
+    if(this.x) {
+      this.br[X] = this.br[A] & 0xff;
+      this.setZandN(this.br[X], this.x);
+    } else {
+      this.br[X] = this.br[A];
+      this.setZandN(this.br[X], this.x);
+    }
+  }
+
+  this.tay = function(adr, adrh) {
+    if(this.x) {
+      this.br[Y] = this.br[A] & 0xff;
+      this.setZandN(this.br[Y], this.x);
+    } else {
+      this.br[Y] = this.br[A];
+      this.setZandN(this.br[Y], this.x);
+    }
+  }
+
+  this.tsx = function(adr, adrh) {
+    if(this.x) {
+      this.br[Y] = this.br[SP] & 0xff;
+      this.setZandN(this.br[Y], this.x);
+    } else {
+      this.br[Y] = this.br[SP];
+      this.setZandN(this.br[Y], this.x);
+    }
+  }
+
+  this.txa = function(adr, adrh) {
+    if(this.m) {
+      this.br[A] = (this.br[A] & 0xff00) | (this.br[X] & 0xff);
+      this.setZandN(this.br[A], this.m);
+    } else {
+      this.br[A] = this.br[X];
+      this.setZandN(this.br[A], this.m);
+    }
+  }
+
+  this.txs = function(adr, adrh) {
+    this.br[SP] = this.br[X];
+  }
+
+  this.txy = function(adr, adrh) {
+    if(this.x) {
+      this.br[Y] = this.br[X] & 0xff;
+      this.setZandN(this.br[Y], this.x);
+    } else {
+      this.br[Y] = this.br[X];
+      this.setZandN(this.br[Y], this.x);
+    }
+  }
+
+  this.tya = function(adr, adrh) {
+    if(this.m) {
+      this.br[A] = (this.br[A] & 0xff00) | (this.br[Y] & 0xff);
+      this.setZandN(this.br[A], this.m);
+    } else {
+      this.br[A] = this.br[Y];
+      this.setZandN(this.br[A], this.m);
+    }
+  }
+
+  this.tyx = function(adr, adrh) {
+    if(this.x) {
+      this.br[X] = this.br[Y] & 0xff;
+      this.setZandN(this.br[X], this.x);
+    } else {
+      this.br[X] = this.br[Y];
+      this.setZandN(this.br[X], this.x);
+    }
+  }
+
+  this.tcd = function(adr, adrh) {
+    this.br[DPR] = this.br[A];
+    this.setZandN(this.br[DPR], false);
+  }
+
+  this.tcs = function(adr, adrh) {
+    this.br[SP] = this.br[A];
+  }
+
+  this.tdc = function(adr, adrh) {
+    this.br[A] = this.br[DPR];
+    this.setZandN(this.br[A], false);
+  }
+
+  this.tsc = function(adr, adrh) {
+    this.br[A] = this.br[SP];
+    this.setZandN(this.br[A], false);
+  }
+
+  this.xba = function(adr, adrh) {
+    let low = this.br[A] & 0xff;
+    let high = (this.br[A] & 0xff00) >> 8;
+    this.br[A] = (low << 8) | high;
+    this.setZandN(this.br[A], true);
+  }
+
+  this.xce = function(adr, adrh) {
+    let temp = this.c;
+    this.c = this.e;
+    this.e = temp;
+  }
+
   // function table
   this.functions = [
-    this.brk, this.ora, this.cop, this.ora, this.tsb, this.ora, this.asl, this.ora, this.php, this.ora, this.asl, this.phd, this.tsb, this.ora, this.asl, this.ora,
-    this.bpl, this.ora, this.ora, this.ora, this.trb, this.ora, this.asl, this.ora, this.clc, this.ora, this.inc, this.tcs, this.trb, this.ora, this.asl, this.ora,
-    this.jsr, this.and, this.jsl, this.and, this.bit, this.and, this.rol, this.and, this.plp, this.and, this.rol, this.pld, this.bit, this.and, this.rol, this.and,
-    this.bmi, this.and, this.and, this.and, this.bit, this.and, this.rol, this.and, this.sec, this.and, this.dec, this.tsc, this.bit, this.and, this.rol, this.and,
-    this.rti, this.eor, this.wdm, this.eor, this.mvp, this.eor, this.lsr, this.eor, this.pha, this.eor, this.lsr, this.phk, this.jmp, this.eor, this.lsr, this.eor,
+    this.brk, this.ora, this.cop, this.ora, this.tsb, this.ora, this.asl, this.ora, this.php, this.ora, this.asla,this.phd, this.tsb, this.ora, this.asl, this.ora,
+    this.bpl, this.ora, this.ora, this.ora, this.trb, this.ora, this.asl, this.ora, this.clc, this.ora, this.inca,this.tcs, this.trb, this.ora, this.asl, this.ora,
+    this.jsr, this.and, this.jsl, this.and, this.bit, this.and, this.rol, this.and, this.plp, this.and, this.rola,this.pld, this.bit, this.and, this.rol, this.and,
+    this.bmi, this.and, this.and, this.and, this.bit, this.and, this.rol, this.and, this.sec, this.and, this.deca,this.tsc, this.bit, this.and, this.rol, this.and,
+    this.rti, this.eor, this.wdm, this.eor, this.mvp, this.eor, this.lsr, this.eor, this.pha, this.eor, this.lsra,this.phk, this.jmp, this.eor, this.lsr, this.eor,
     this.bvc, this.eor, this.eor, this.eor, this.mvn, this.eor, this.lsr, this.eor, this.cli, this.eor, this.phy, this.tcd, this.jmp, this.eor, this.lsr, this.eor,
-    this.rts, this.adc, this.per, this.adc, this.stz, this.adc, this.ror, this.adc, this.pla, this.adc, this.ror, this.rtl, this.jmp, this.adc, this.ror, this.adc,
+    this.rts, this.adc, this.per, this.adc, this.stz, this.adc, this.ror, this.adc, this.pla, this.adc, this.rora,this.rtl, this.jmp, this.adc, this.ror, this.adc,
     this.bvs, this.adc, this.adc, this.adc, this.stz, this.adc, this.ror, this.adc, this.sei, this.adc, this.ply, this.tdc, this.jmp, this.adc, this.ror, this.adc,
-    this.bra, this.sta, this.brl, this.sta, this.sty, this.sta, this.stx, this.sta, this.dey, this.bit, this.txa, this.phb, this.sty, this.sta, this.stx, this.sta,
+    this.bra, this.sta, this.brl, this.sta, this.sty, this.sta, this.stx, this.sta, this.dey, this.biti,this.txa, this.phb, this.sty, this.sta, this.stx, this.sta,
     this.bcc, this.sta, this.sta, this.sta, this.sty, this.sta, this.stx, this.sta, this.tya, this.sta, this.txs, this.txy, this.stz, this.sta, this.stz, this.sta,
     this.ldy, this.lda, this.ldx, this.lda, this.ldy, this.lda, this.ldx, this.lda, this.tay, this.lda, this.tax, this.plb, this.ldy, this.lda, this.ldx, this.lda,
     this.bcs, this.lda, this.lda, this.lda, this.ldy, this.lda, this.ldx, this.lda, this.clv, this.lda, this.tsx, this.tyx, this.ldy, this.lda, this.ldx, this.lda,
