@@ -20,35 +20,7 @@ for(let i = 0; i < 100; i++) {
     cpu.cycle();
     cycles++;
   } while(cpu.cyclesLeft > 0);
-  log(getStr(cpu, cycles));
-}
-
-function getStr(cpu, cycles) {
-  let str = "";
-  str += getByteRep(cpu.r[K]) + ":";
-  str += getWordRep(cpu.br[PC]) + " - ";
-  str += "A: " + getWordRep(cpu.br[A]) + ", ";
-  str += "X: " + getWordRep(cpu.br[X]) + ", ";
-  str += "Y: " + getWordRep(cpu.br[Y]) + ", ";
-  str += "SP: " + getWordRep(cpu.br[SP]) + ", ";
-  str += "DBR: " + getByteRep(cpu.r[DBR]) + ", ";
-  str += "DPR: " + getWordRep(cpu.br[DPR]) + ", ";
-  str += getFlags(cpu) + " " + (cpu.e ? "E" : "e") + ", ";
-  str += "CYC: " + cycles
-  return str;
-}
-
-function getFlags(cpu) {
-  let val = "";
-  val += cpu.n ? "N" : "n";
-  val += cpu.v ? "V" : "v";
-  val += cpu.m ? "M" : "m";
-  val += cpu.x ? "X" : "x";
-  val += cpu.d ? "D" : "d";
-  val += cpu.i ? "I" : "i";
-  val += cpu.z ? "Z" : "z";
-  val += cpu.c ? "C" : "c";
-  return val;
+  log(getTrace(cpu, cycles));
 }
 
 function MemHandler() {

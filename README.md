@@ -15,4 +15,4 @@ Resources that I used for implementing this:
 - The [65C816 opcodes tutorial](http://6502.org/tutorials/65c816opcodes.html) from 6502.org.
 - The [65816 opcode matrix](http://www.oxyron.de/html/opcodes816.html) from oxyron.de (the cycle timing and notes there aren't fully accurate).
 - Some of the wrapper code is based on my [NES emulator](https://github.com/elzo-d/NesJs).
-- The [zip.js](https://gildas-lormeau.github.io/zip.js/) will be used for zipped rom loading support.
+- The [zip.js](https://gildas-lormeau.github.io/zip.js/) library will be used for zipped rom loading support.
