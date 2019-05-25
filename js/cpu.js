@@ -596,7 +596,7 @@ function Cpu(mem) {
         return [this.getSigned(rel, true), 0];
       }
 
-      case RELL: {
+      case RLL: {
         // relative long
         let rel = this.mem.read((this.r[K] << 16) | this.br[PC]++);
         rel |= this.mem.read((this.r[K] << 16) | this.br[PC]++) << 8;
@@ -820,7 +820,7 @@ function Cpu(mem) {
   this.and = function(adr, adrh) {
     if(this.m) {
       let value = this.mem.read(adr);
-      this.br[A] &= value;
+      this.br[A] = (this.br[A] & 0xff00) | ((this.br[A] & value) & 0xff);
       this.setZandN(this.br[A], this.m);
     } else {
       let value = this.readWord(adr, adrh);
@@ -833,7 +833,7 @@ function Cpu(mem) {
   this.eor = function(adr, adrh) {
     if(this.m) {
       let value = this.mem.read(adr);
-      this.br[A] ^= value;
+      this.br[A] = (this.br[A] & 0xff00) | ((this.br[A] ^ value) & 0xff);
       this.setZandN(this.br[A], this.m);
     } else {
       let value = this.readWord(adr, adrh);
@@ -846,7 +846,7 @@ function Cpu(mem) {
   this.ora = function(adr, adrh) {
     if(this.m) {
       let value = this.mem.read(adr);
-      this.br[A] |= value;
+      this.br[A] = (this.br[A] & 0xff00) | ((this.br[A] | value) & 0xff);
       this.setZandN(this.br[A], this.m);
     } else {
       let value = this.readWord(adr, adrh);
@@ -1132,6 +1132,7 @@ function Cpu(mem) {
     this.cyclesLeft++; // native mode: 1 extra cycle
     this.i = true;
     this.d = false;
+    this.r[K] = 0;
     this.br[PC] = this.mem.read(0xffe6) | (this.mem.read(0xffe7) << 8);
   }
 
@@ -1142,6 +1143,7 @@ function Cpu(mem) {
     this.cyclesLeft++; // native mode: 1 extra cycle
     this.i = true;
     this.d = false;
+    this.r[K] = 0;
     this.br[PC] = this.mem.read(0xffe4) | (this.mem.read(0xffe5) << 8);
   }
 
@@ -1152,6 +1154,7 @@ function Cpu(mem) {
     this.cyclesLeft++; // native mode: 1 extra cycle
     this.i = true;
     this.d = false;
+    this.r[K] = 0;
     this.br[PC] = this.mem.read(0xffe8) | (this.mem.read(0xffe9) << 8);
   }
 
@@ -1162,6 +1165,7 @@ function Cpu(mem) {
     this.cyclesLeft++; // native mode: 1 extra cycle
     this.i = true;
     this.d = false;
+    this.r[K] = 0;
     this.br[PC] = this.mem.read(0xffea) | (this.mem.read(0xffeb) << 8);
   }
 
@@ -1172,6 +1176,7 @@ function Cpu(mem) {
     this.cyclesLeft++; // native mode: 1 extra cycle
     this.i = true;
     this.d = false;
+    this.r[K] = 0;
     this.br[PC] = this.mem.read(0xffee) | (this.mem.read(0xffef) << 8);
   }
 
@@ -1304,8 +1309,8 @@ function Cpu(mem) {
       this.br[PC] -= 3;
     }
     if(this.x) {
-      this.br[X] & 0xff;
-      this.br[Y] & 0xff;
+      this.br[X] &= 0xff;
+      this.br[Y] &= 0xff;
     }
   }
 
@@ -1322,8 +1327,8 @@ function Cpu(mem) {
       this.br[PC] -= 3;
     }
     if(this.x) {
-      this.br[X] & 0xff;
-      this.br[Y] & 0xff;
+      this.br[X] &= 0xff;
+      this.br[Y] &= 0xff;
     }
   }
 

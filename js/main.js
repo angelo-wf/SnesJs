@@ -1,45 +1,103 @@
 
+let snes = new Snes();
 
-let mem = new MemHandler();
-mem.memory[0] = 0x18; // CLC
-mem.memory[1] = 0xfb; // XCE
-mem.memory[2] = 0x78; // SEI
-mem.memory[3] = 0xc2; // REP #38
-mem.memory[4] = 0x38;
-mem.memory[5] = 0xA2; // LDX #$1fff
-mem.memory[6] = 0xff;
-mem.memory[7] = 0x1f;
-mem.memory[8] = 0x9a; // TXS
+let c = el("output");
+c.width = 512;
+c.height = 480;
+let ctx = c.getContext("2d");
+let imgData = ctx.createImageData(512, 480);
+let loopId = 0;
 
-let cpu = new Cpu(mem);
+let logStr = "";
 
-let cycles = 0;
+zip.workerScriptsPath = "lib/";
+zip.useWebWorkers = false;
 
-for(let i = 0; i < 100; i++) {
-  do {
-    cpu.cycle();
-    cycles++;
-  } while(cpu.cyclesLeft > 0);
-  log(getTrace(cpu, cycles));
+el("rom").onchange = function(e) {
+  //audioHandler.resume();
+  let freader = new FileReader();
+  freader.onload = function() {
+    let buf = freader.result;
+    if(e.target.files[0].name.slice(-4) === ".zip") {
+      // use zip.js to read the zip
+      let blob = new Blob([buf]);
+      zip.createReader(new zip.BlobReader(blob), function(reader) {
+        reader.getEntries(function(entries) {
+          if(entries.length) {
+            let found = false;
+            for(let i = 0; i < entries.length; i++) {
+              let name = entries[i].filename;
+              if(name.slice(-4) !== ".smc" && name.slice(-4) !== ".sfc") {
+                continue;
+              }
+              found = true;
+              log("Loaded \"" + name + "\" from zip");
+              entries[i].getData(new zip.BlobWriter(), function(blob) {
+                let breader = new FileReader();
+                breader.onload = function() {
+                  let rbuf = breader.result;
+                  let arr = new Uint8Array(rbuf);
+                  loadRom(arr);
+                  reader.close(function() {});
+                }
+                breader.readAsArrayBuffer(blob);
+              }, function(curr, total) {});
+              break;
+            }
+            if(!found) {
+              log("No .smc or .smf file found in zip");
+            }
+          } else {
+            log("Zip file was empty");
+          }
+        });
+      }, function(err) {
+        log("Failed to read zip: " + err);
+      });
+    } else {
+      // load rom normally
+      let arr = new Uint8Array(buf);
+      loadRom(arr);
+    }
+  }
+  freader.readAsArrayBuffer(e.target.files[0]);
 }
 
-function MemHandler() {
-  this.memory = new Uint8Array(0x10000);
+el("pause").onclick = function() {
+  cancelAnimationFrame(loopId);
+}
 
-  this.read = function(adr) {
-    adr &= 0xffffff;
-    return this.memory[adr & 0xffff];
+function loadRom(rom) {
+  if(snes.loadRom(rom)) {
+    snes.reset(true);
+    loopId = requestAnimationFrame(update);
   }
+  placeLog();
+}
 
-  this.write = function(adr, value) {
-    adr &= 0xffffff;
-    this.memory[adr & 0xffff] = value;
+function run() {
+  for(let i = 0; i < 100; i++) {
+    do {
+      snes.cycle();
+    } while(snes.cpu.cyclesLeft > 0);
+    log(getTrace(snes.cpu, snes.cycles));
   }
+}
+
+function update() {
+  run();
+  placeLog();
+  loopId = requestAnimationFrame(update);
 }
 
 function log(text) {
-  el("log").innerHTML += text + "<br>";
+  logStr += text + "\n";
+}
+
+function placeLog(text) {
+  el("log").innerHTML += logStr;
   el("log").scrollTop = el("log").scrollHeight;
+  logStr = "";
 }
 
 function getByteRep(val) {
@@ -47,12 +105,17 @@ function getByteRep(val) {
 }
 
 function getWordRep(val) {
-  console.log(val);
   return ("000" + val.toString(16)).slice(-4).toUpperCase();
 }
 
 function getLongRep(val) {
   return ("00000" + val.toString(16)).slice(-6).toUpperCase();
+}
+
+function clearArray(arr) {
+  for(let i = 0; i < arr.length; i++) {
+    arr[i] = 0;
+  }
 }
 
 function el(id) {

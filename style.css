@@ -15,7 +15,9 @@ pre {
   min-height: 200px;
   overflow: scroll;
   text-align: left;
-  width: 512px;
+  /* width: 512px; */
+  /* for easier reading of the tracelog */
+  width: 1000px;
   margin: auto;
   border: 1px solid #afafaf;
   padding: 5px;
