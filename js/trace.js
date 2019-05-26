@@ -1,15 +1,16 @@
 
+
 function getTrace(cpu, cycles) {
   let str = "";
-  str += getByteRep(cpu.r[K]) + ":";
-  str += getWordRep(cpu.br[PC]) + " - ";
+  str += getByteRep(cpu.r[1]) + ":";
+  str += getWordRep(cpu.br[4]) + " - ";
   str += getDisassembly(cpu) + " - ";
-  str += "A:" + getWordRep(cpu.br[A]) + " ";
-  str += "X:" + getWordRep(cpu.br[X]) + " ";
-  str += "Y:" + getWordRep(cpu.br[Y]) + " ";
-  str += "SP:" + getWordRep(cpu.br[SP]) + " ";
-  str += "DBR:" + getByteRep(cpu.r[DBR]) + " ";
-  str += "DPR:" + getWordRep(cpu.br[DPR]) + " ";
+  str += "A:" + getWordRep(cpu.br[0]) + " ";
+  str += "X:" + getWordRep(cpu.br[1]) + " ";
+  str += "Y:" + getWordRep(cpu.br[2]) + " ";
+  str += "SP:" + getWordRep(cpu.br[3]) + " ";
+  str += "DBR:" + getByteRep(cpu.r[0]) + " ";
+  str += "DPR:" + getWordRep(cpu.br[5]) + " ";
   str += getFlags(cpu) + " " + (cpu.e ? "E" : "e") + " ";
   str += "CYC:" + cycles
   return str;
@@ -39,44 +40,44 @@ function getDisassembly(cpu) {
     return "irq\t\t";
   }
 
-  let op = cpu.mem.read((cpu.r[K] << 16) | cpu.br[PC]);
-  let p1 = cpu.mem.read((cpu.r[K] << 16) | ((cpu.br[PC] + 1) & 0xffff));
-  let p2 = cpu.mem.read((cpu.r[K] << 16) | ((cpu.br[PC] + 2) & 0xffff));
-  let p3 = cpu.mem.read((cpu.r[K] << 16) | ((cpu.br[PC] + 3) & 0xffff));
+  let op = cpu.mem.read((cpu.r[1] << 16) | cpu.br[4]);
+  let p1 = cpu.mem.read((cpu.r[1] << 16) | ((cpu.br[4] + 1) & 0xffff));
+  let p2 = cpu.mem.read((cpu.r[1] << 16) | ((cpu.br[4] + 2) & 0xffff));
+  let p3 = cpu.mem.read((cpu.r[1] << 16) | ((cpu.br[4] + 3) & 0xffff));
   let wo = (p2 << 8) | p1;
   let lo = (p3 << 16) | wo;
 
   let name = opNames[op].toUpperCase();
   switch(cpu.modes[op]) {
-    case IMP: return name + "\t\t";
-    case IMM: return name + " #$" + getByteRep(p1) + "\t";
-    case IMMm: return name + " #$" + (cpu.m ? getByteRep(p1) : getWordRep(wo)) + "\t";
-    case IMMx: return name + " #$" + (cpu.x ? getByteRep(p1) : getWordRep(wo)) + "\t";
-    case IMMl: return name + " #$" + getWordRep(wo) + "\t";
-    case DP: return name + " $" + getByteRep(p1) + "\t";
-    case DPX: return name + " $" + getByteRep(p1) + ",X\t";
-    case DPY: return name + " $" + getByteRep(p1) + ",Y\t";
-    case IDP: return name + " ($" + getByteRep(p1) + ")\t";
-    case IDX: return name + " ($" + getByteRep(p1) + ",X)\t";
-    case IDY:
-    case IDYr: return name + " ($" + getByteRep(p1) + "),Y\t";
-    case IDL: return name + " [$" + getByteRep(p1) + "]\t";
-    case ILY: return name + " [$" + getByteRep(p1) + "],Y\t";
-    case SR: return name + " $" + getByteRep(p1) + ",S\t";
-    case ISY: return name + " ($" + getByteRep(p1) + ",S),Y\t";
-    case ABS: return name + " $" + getWordRep(wo) + "\t";
-    case ABX:
-    case ABXr: return name + " $" + getWordRep(wo) + ",X\t";
-    case ABY:
-    case ABYr: return name + " $" + getWordRep(wo) + ",Y\t";
-    case ABL: return name + " $" + getLongRep(lo) + "\t";
-    case ALX: return name + " $" + getLongRep(lo) + ",X\t";
-    case IND: return name + " ($" + getWordRep(wo) + ")\t";
-    case IAX: return name + " ($" + getWordRep(wo) + ",X)\t";
-    case IAL: return name + " [$" + getWordRep(wo) + "]\t";
-    case REL: return name + " $" + getWordRep((cpu.br[PC] + 2 + cpu.getSigned(p1, true)) & 0xffff) + "\t";
-    case RLL: return name + " $" + getWordRep((cpu.br[PC] + 3 + cpu.getSigned(wo, false)) & 0xffff) + "\t";
-    case BM: return name + " #$" + getByteRep(p2) + ",#$" + getByteRep(p1) + "\t";
+    case 0: return name + "\t\t";
+    case 1: return name + " #$" + getByteRep(p1) + "\t";
+    case 2: return name + " #$" + (cpu.m ? getByteRep(p1) : getWordRep(wo)) + "\t";
+    case 3: return name + " #$" + (cpu.x ? getByteRep(p1) : getWordRep(wo)) + "\t";
+    case 4: return name + " #$" + getWordRep(wo) + "\t";
+    case 5: return name + " $" + getByteRep(p1) + "\t";
+    case 6: return name + " $" + getByteRep(p1) + ",X\t";
+    case 7: return name + " $" + getByteRep(p1) + ",Y\t";
+    case 8: return name + " ($" + getByteRep(p1) + ")\t";
+    case 9: return name + " ($" + getByteRep(p1) + ",X)\t";
+    case 10:
+    case 11: return name + " ($" + getByteRep(p1) + "),Y\t";
+    case 12: return name + " [$" + getByteRep(p1) + "]\t";
+    case 13: return name + " [$" + getByteRep(p1) + "],Y\t";
+    case 14: return name + " $" + getByteRep(p1) + ",S\t";
+    case 15: return name + " ($" + getByteRep(p1) + ",S),Y\t";
+    case 16: return name + " $" + getWordRep(wo) + "\t";
+    case 17:
+    case 18: return name + " $" + getWordRep(wo) + ",X\t";
+    case 19:
+    case 20: return name + " $" + getWordRep(wo) + ",Y\t";
+    case 21: return name + " $" + getLongRep(lo) + "\t";
+    case 22: return name + " $" + getLongRep(lo) + ",X\t";
+    case 23: return name + " ($" + getWordRep(wo) + ")\t";
+    case 24: return name + " ($" + getWordRep(wo) + ",X)\t";
+    case 25: return name + " [$" + getWordRep(wo) + "]\t";
+    case 26: return name + " $" + getWordRep((cpu.br[4] + 2 + cpu.getSigned(p1, true)) & 0xffff) + "\t";
+    case 27: return name + " $" + getWordRep((cpu.br[4] + 3 + cpu.getSigned(wo, false)) & 0xffff) + "\t";
+    case 28: return name + " #$" + getByteRep(p2) + ",#$" + getByteRep(p1) + "\t";
   }
 }
 
