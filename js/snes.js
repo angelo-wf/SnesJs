@@ -3,6 +3,8 @@ function Snes() {
 
   this.cpu = new Cpu(this);
 
+  this.apu = new Apu(this);
+
   this.ram = new Uint8Array(0x20000);
 
   this.cart = undefined;
@@ -13,6 +15,7 @@ function Snes() {
     }
 
     this.cpu.reset();
+    this.apu.reset();
 
     this.cycles = 0;
   }

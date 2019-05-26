@@ -42,7 +42,7 @@ Cpu = (function() {
   const RLL = 27;
   const BM = 28; // block move
 
-  return function (mem) {
+  return function(mem) {
 
     // memory handler
     this.mem = mem;
