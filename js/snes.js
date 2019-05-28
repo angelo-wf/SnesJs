@@ -23,6 +23,7 @@ function Snes() {
 
   this.cycle = function() {
     this.cpu.cycle();
+    this.apu.cycle();
     this.cycles++;
   }
 
@@ -48,7 +49,7 @@ function Snes() {
 
   this.write = function(adr, value) {
     adr &= 0xffffff;
-    log("Written $" + getByteRep(value) + " to $" + getLongRep(adr));
+    //log("Written $" + getByteRep(value) + " to $" + getLongRep(adr));
     let bank = adr >> 16;
     adr &= 0xffff;
     if(bank === 0x7e || bank === 0x7f) {

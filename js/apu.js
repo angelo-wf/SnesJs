@@ -21,6 +21,10 @@ function Apu(snes) {
   }
   this.reset();
 
+  this.cycle = function() {
+    this.spc.cycle();
+  }
+
   this.read = function(adr) {
     adr &= 0xffff;
 
@@ -33,6 +37,8 @@ function Apu(snes) {
 
   this.write = function(adr, value) {
     adr &= 0xffff;
+
+    //log("Written $" + getByteRep(value) + " to $" + getWordRep(adr));
 
     this.ram[adr] = value;
   }

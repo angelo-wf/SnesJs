@@ -1,14 +1,15 @@
 
-let snes = new Snes();
+let logStr = "";
 
 let c = el("output");
 c.width = 512;
 c.height = 480;
 let ctx = c.getContext("2d");
 let imgData = ctx.createImageData(512, 480);
+
 let loopId = 0;
 
-let logStr = "";
+let snes = new Snes();
 
 zip.workerScriptsPath = "lib/";
 zip.useWebWorkers = false;
@@ -77,10 +78,15 @@ function loadRom(rom) {
 
 function run() {
   for(let i = 0; i < 100; i++) {
+    // do {
+    //   snes.cycle();
+    // } while(snes.cpu.cyclesLeft > 0);
+    // log(getTrace(snes.cpu, snes.cycles));
+
     do {
       snes.cycle();
-    } while(snes.cpu.cyclesLeft > 0);
-    log(getTrace(snes.cpu, snes.cycles));
+    } while(snes.apu.spc.cyclesLeft > 0);
+    log(getSpcTrace(snes.apu.spc, snes.cycles));
   }
 }
 
