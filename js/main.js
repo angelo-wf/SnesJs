@@ -1,6 +1,4 @@
 
-let logStr = "";
-
 let c = el("output");
 c.width = 512;
 c.height = 480;
@@ -8,6 +6,9 @@ let ctx = c.getContext("2d");
 let imgData = ctx.createImageData(512, 480);
 
 let loopId = 0;
+let loaded = false;
+let paused = false;
+let pausedInBg = false;
 
 let snes = new Snes();
 
@@ -46,7 +47,7 @@ el("rom").onchange = function(e) {
               break;
             }
             if(!found) {
-              log("No .smc or .smf file found in zip");
+              log("No .smc or .sfc file found in zip");
             }
           } else {
             log("Zip file was empty");
@@ -65,45 +66,79 @@ el("rom").onchange = function(e) {
 }
 
 el("pause").onclick = function() {
-  cancelAnimationFrame(loopId);
+  if(paused && loaded) {
+    loopId = requestAnimationFrame(update);
+    paused = false;
+    el("pause").textContent = "Pause";
+  } else {
+    cancelAnimationFrame(loopId);
+    paused = true;
+    el("pause").textContent = "Continue";
+  }
+}
+
+el("reset").onclick = function(e) {
+  snes.reset(false);
+}
+
+el("hardreset").onclick = function(e) {
+  snes.reset(true);
+}
+
+el("runframe").onclick = function(e) {
+  if(loaded) {
+    runFrame();
+  }
+}
+
+document.onvisibilitychange = function(e) {
+  if(document.hidden) {
+    pausedInBg = false;
+    if(!paused && loaded) {
+      el("pause").click();
+      pausedInBg = true;
+    }
+  } else {
+    if(pausedInBg && loaded) {
+      el("pause").click();
+      pausedInBg = false;
+    }
+  }
 }
 
 function loadRom(rom) {
   if(snes.loadRom(rom)) {
     snes.reset(true);
-    loopId = requestAnimationFrame(update);
+    if(!loaded && !paused) {
+      loopId = requestAnimationFrame(update);
+    }
+    loaded = true;
   }
-  placeLog();
 }
 
-function run() {
-  for(let i = 0; i < 100; i++) {
-    // do {
-    //   snes.cycle();
-    // } while(snes.cpu.cyclesLeft > 0);
-    // log(getTrace(snes.cpu, snes.cycles));
-
-    do {
-      snes.cycle();
-    } while(snes.apu.spc.cyclesLeft > 0);
-    log(getSpcTrace(snes.apu.spc, snes.cycles));
-  }
+function runFrame() {
+  // for(let i = 0; i < 100; i++) {
+  //   do {
+  //     snes.cycle();
+  //   } while(snes.cpu.cyclesLeft > 0);
+  //   log(getTrace(snes.cpu, snes.cycles));
+  //
+  //   do {
+  //     snes.cycle();
+  //   } while(snes.apu.spc.cyclesLeft > 0);
+  //   log(getSpcTrace(snes.apu.spc, snes.cycles));
+  // }
+  snes.runFrame();
 }
 
 function update() {
-  run();
-  placeLog();
+  runFrame();
   loopId = requestAnimationFrame(update);
 }
 
 function log(text) {
-  logStr += text + "\n";
-}
-
-function placeLog(text) {
-  el("log").innerHTML += logStr;
+  el("log").innerHTML += text + "\n";
   el("log").scrollTop = el("log").scrollHeight;
-  logStr = "";
 }
 
 function getByteRep(val) {

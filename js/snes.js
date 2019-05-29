@@ -17,14 +17,62 @@ function Snes() {
     this.cpu.reset();
     this.apu.reset();
 
-    this.cycles = 0;
+    this.xPos = 0;
+    this.yPos = 0;
+    this.frames = 0;
+
+    this.cpuCyclesLeft = 0;
+    this.cpuMemOps = 0;
   }
   this.reset();
 
+  // cycle functions
+
   this.cycle = function() {
-    this.cpu.cycle();
-    this.apu.cycle();
-    this.cycles++;
+    if(this.xPos < 536 || this.xPos >= 576) {
+      // the cpu is paused for 40 cycles starting around dot 536
+      this.cpuCycle();
+    }
+
+    if(this.xPos === 0) {
+      // this.ppu.renderLine(this.yPos);
+    }
+
+    // TODO: get better approximation for spc speed
+    // this makes it run at 1068960 Hz
+    if(this.xPos % 20 === 0) {
+      this.apu.cycle();
+    }
+
+    // TODO: in non-intelace mode, line 240 on every odd frame is 1360 cycles
+    // and in interlace mode, every even frame is 263 lines
+    this.xPos += 2;
+    if(this.xPos === 1364) {
+      this.xPos = 0;
+      this.yPos++;
+      if(this.yPos === 262) {
+        this.yPos = 0;
+        this.frames++;
+      }
+    }
+  }
+
+  this.cpuCycle = function() {
+    if(this.cpuCyclesLeft === 0) {
+      this.cpu.cyclesLeft = 0;
+      this.cpuMemOps = 0;
+      this.cpu.cycle();
+      // TODO: IntOp cycles take 6 master cycles, do as 8 now, to approximate
+      // correct timing for mem ops
+      this.cpuCyclesLeft += (this.cpu.cyclesLeft - this.cpuMemOps) * 8;
+    }
+    this.cpuCyclesLeft--;
+  }
+
+  this.runFrame = function() {
+    do {
+      this.cycle();
+    } while(!(this.xPos === 0 && this.yPos === 0));
   }
 
   // read and write handlers
@@ -37,9 +85,9 @@ function Snes() {
       // banks 7e and 7f
       return this.ram[(bank & 0x1) | 0xffff];
     }
-    if(adr < 0x6000 && (bank < 0x40 || (bank >= 0x80 && bank < 0xc0))) {
-      // banks 00-3f, 80-bf, adr < 0x6000
-      if((adr & 0xffff) < 0x2000) {
+    if(adr < 0x8000 && (bank < 0x40 || (bank >= 0x80 && bank < 0xc0))) {
+      // banks 00-3f, 80-bf, $0000-$7fff
+      if(adr < 0x2000) {
         return this.ram[adr & 0x1fff];
       }
       return 0; // not implemented yet
@@ -56,9 +104,9 @@ function Snes() {
       // banks 7e and 7f
       this.ram[(bank & 0x1) | 0xffff] = value;
     }
-    if(adr < 0x6000 && (bank < 0x40 || (bank >= 0x80 && bank < 0xc0))) {
-      // banks 00-3f, 80-bf, adr < 0x6000
-      if((adr & 0xffff) < 0x2000) {
+    if(adr < 0x8000 && (bank < 0x40 || (bank >= 0x80 && bank < 0xc0))) {
+      // banks 00-3f, 80-bf, $0000-$7fff
+      if(adr < 0x2000) {
         this.ram[adr & 0x1fff] = value;
       }
     }

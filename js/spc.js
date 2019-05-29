@@ -947,14 +947,13 @@ Spc = (function() {
       let result = (value / this.r[X]) & 0xffff;
       let mod = value % this.r[X];
       this.v = result > 0xff;
+      this.h = (this.r[X] & 0xf) <= (this.r[Y] & 0xf);
       this.r[A] = result;
       this.r[Y] = mod;
       this.setZandN(this.r[A]);
-      this.h = (this.r[X] & 0xf) <= (this.r[Y] & 0xf);
     }
 
     this.daa = function(adr, adrh, instr) {
-      let carry = false;
       if(this.r[A] > 0x99 || this.c) {
         this.r[A] += 0x60;
         carry = true;
@@ -967,10 +966,9 @@ Spc = (function() {
     }
 
     this.das = function(adr, adrh, instr) {
-      let carry = false;
       if(this.r[A] > 0x99 || !this.c) {
         this.r[A] -= 0x60;
-        carry = true;
+        carry = false;
       }
       this.c = carry;
       if((this.r[A] & 0xf) > 9 || !this.h) {

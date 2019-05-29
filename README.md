@@ -16,6 +16,7 @@ Resources that I used for implementing this:
 - The [65816 opcode matrix](http://www.oxyron.de/html/opcodes816.html) from oxyron.de (the cycle timing and notes there aren't fully accurate).
 - The [SuperFamicon wiki](https://wiki.superfamicom.org).
 - The in-progress [SnesDev Wiki](https://snesdev.mesen.ca/wiki/index.php?title=Main_Page) by [Sour](https://github.com/SourMesen).
+- Some quick peeks at Sour's [Mesen-S source](https://github.com/SourMesen/Mesen-S).
 - The [nocach fullsnes document](https://problemkaputt.de/fullsnes.txt).
 - Some posts in the [SnesDev section](https://forums.nesdev.com/viewforum.php?f=12) of the NesDev forums.
 - The [Super NES Programming pages](https://en.wikibooks.org/wiki/Super_NES_Programming) in Wikibooks.

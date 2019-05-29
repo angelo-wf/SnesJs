@@ -14,21 +14,132 @@ function Apu(snes) {
 
   this.ram = new Uint8Array(0x10000);
 
+  this.spcWritePorts = new Uint8Array(4);
+  this.spcReadPorts = new Uint8Array(6); // includes 2 bytes of 'ram'
+
   this.reset = function() {
     clearArray(this.ram);
+    clearArray(this.spcWritePorts);
+    clearArray(this.spcReadPorts);
 
     this.spc.reset();
+
+    this.dspAdr = 0;
+    this.dspRomReadable = true;
+
+    // timers
+    this.timer1int = 0;
+    this.timer1div = 0;
+    this.timer1target = 0;
+    this.timer1counter = 0;
+    this.timer1enabled = false;
+    this.timer2int = 0;
+    this.timer2div = 0;
+    this.timer2target = 0;
+    this.timer2counter = 0;
+    this.timer2enabled = false;
+    this.timer3int = 0;
+    this.timer3div = 0;
+    this.timer3target = 0;
+    this.timer3counter = 0;
+    this.timer3enabled = false;
   }
   this.reset();
 
   this.cycle = function() {
     this.spc.cycle();
+
+    // run the timers
+    if(this.timer1int === 0) {
+      this.timer1int = 128;
+      if(this.timer1enabled) {
+        this.timer1div++;
+        this.timer1div &= 0xff;
+        if(this.timer1div === this.timer1target) {
+          this.timer1div = 0;
+          this.timer1counter++;
+          this.timer1counter &= 0xf;
+        }
+      }
+    }
+    this.timer1int--;
+
+    if(this.timer2int === 0) {
+      this.timer2int = 128;
+      if(this.timer2enabled) {
+        this.timer2div++;
+        this.timer2div &= 0xff;
+        if(this.timer2div === this.timer2target) {
+          this.timer2div = 0;
+          this.timer2counter++;
+          this.timer2counter &= 0xf;
+        }
+      }
+    }
+    this.timer2int--;
+
+    if(this.timer3int === 0) {
+      this.timer3int = 16;
+      if(this.timer3enabled) {
+        this.timer3div++;
+        this.timer3div &= 0xff;
+        if(this.timer3div === this.timer3target) {
+          this.timer3div = 0;
+          this.timer3counter++;
+          this.timer3counter &= 0xf;
+        }
+      }
+    }
+    this.timer3int--;
+
   }
 
   this.read = function(adr) {
     adr &= 0xffff;
 
-    if(adr >= 0xffc0) {
+    switch(adr) {
+      case 0xf0:
+      case 0xf1:
+      case 0xfa:
+      case 0xfb:
+      case 0xfc: {
+        // not readable
+        return 0;
+      }
+      case 0xf2: {
+        return this.dspAdr;
+      }
+      case 0xf3: {
+        // TODO: read from dsp registers
+        // this.dspAdr & 0x7f;
+        return 0;
+      }
+      case 0xf4:
+      case 0xf5:
+      case 0xf6:
+      case 0xf7:
+      case 0xf8:
+      case 0xf9: {
+        return this.spcReadPorts[adr - 0xf4];
+      }
+      case 0xfd: {
+        let val = this.timer1counter;
+        this.timer1counter = 0;
+        return val;
+      }
+      case 0xfe: {
+        let val = this.timer2counter;
+        this.timer2counter = 0;
+        return val;
+      }
+      case 0xff: {
+        let val = this.timer3counter;
+        this.timer3counter = 0;
+        return val;
+      }
+    }
+
+    if(adr >= 0xffc0 && this.dspRomReadable) {
       return this.bootRom[adr & 0x3f];
     }
 
@@ -38,7 +149,60 @@ function Apu(snes) {
   this.write = function(adr, value) {
     adr &= 0xffff;
 
-    //log("Written $" + getByteRep(value) + " to $" + getWordRep(adr));
+    switch(adr) {
+      case 0xf0: {
+        // test register, not emulated
+        break;
+      }
+      case 0xf1: {
+        this.timer1enabled = (value & 0x01) > 0;
+        this.timer2enabled = (value & 0x02) > 0;
+        this.timer3enabled = (value & 0x04) > 0;
+        this.dspRomReadable = (value & 0x80) > 0;
+        if((value & 0x10) > 0) {
+          this.spcReadPorts[0] = 0;
+          this.spcReadPorts[1] = 0;
+        }
+        if((value & 0x20) > 0) {
+          this.spcReadPorts[2] = 0;
+          this.spcReadPorts[3] = 0;
+        }
+        break;
+      }
+      case 0xf2: {
+        this.dspAdr = value;
+        break;
+      }
+      case 0xf3: {
+        if(this.dspadr < 0x80) {
+          // TODO: write to dsp
+        }
+        break;
+      }
+      case 0xf4:
+      case 0xf5:
+      case 0xf6:
+      case 0xf7: {
+        this.spcWritePorts[adr - 0xf4] = value;
+        break;
+      }
+      case 0xf8:
+      case 0xf9: {
+        this.spcReadPorts[adr - 0xf4] = value;
+      }
+      case 0xfa: {
+        this.timer1target = value;
+        break;
+      }
+      case 0xfb: {
+        this.timer2target = value;
+        break;
+      }
+      case 0xfc: {
+        this.timer3target = value;
+        break;
+      }
+    }
 
     this.ram[adr] = value;
   }
