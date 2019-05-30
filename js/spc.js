@@ -850,18 +850,18 @@ Spc = (function() {
     this.cbne = function(adr, adrh, instr) {
       let value = this.mem.read(adr) ^ 0xff;
       let result = this.r[A] + value + 1;
-      doBranch(result !== 0, adrh);
+      this.doBranch(result !== 0, adrh);
     }
 
     this.dbnz = function(adr, adrh, instr) {
       let value = (this.mem.read(adr) - 1) & 0xff;
       this.mem.write(adr, value);
-      doBranch(value !== 0, adrh);
+      this.doBranch(value !== 0, adrh);
     }
 
     this.dbnzy = function(adr, adrh, instr) {
       this.r[Y]--;
-      doBranch(this.r[Y] !== 0, adr);
+      this.doBranch(this.r[Y] !== 0, adr);
     }
 
     this.popp = function(adr, adrh, instr) {
@@ -956,9 +956,8 @@ Spc = (function() {
     this.daa = function(adr, adrh, instr) {
       if(this.r[A] > 0x99 || this.c) {
         this.r[A] += 0x60;
-        carry = true;
+        this.c = true;
       }
-      this.c = carry;
       if((this.r[A] & 0xf) > 9 || this.h) {
         this.r[A] += 6;
       }
@@ -968,9 +967,8 @@ Spc = (function() {
     this.das = function(adr, adrh, instr) {
       if(this.r[A] > 0x99 || !this.c) {
         this.r[A] -= 0x60;
-        carry = false;
+        this.c = false;
       }
-      this.c = carry;
       if((this.r[A] & 0xf) > 9 || !this.h) {
         this.r[A] -= 6;
       }
@@ -995,7 +993,7 @@ Spc = (function() {
       this.di  , this.tcall,this.set1, this.bbs , this.movs, this.movs, this.movs, this.movs, this.cmpx, this.movsx,this.mov1s,this.movsy,this.movsy,this.movx, this.popx, this.mul ,
       this.bne , this.tcall,this.clr1, this.bbc , this.movs, this.movs, this.movs, this.movs, this.movsx,this.movsx,this.movws,this.movsy,this.decy, this.movay,this.cbne, this.daa ,
       this.clrv, this.tcall,this.set1, this.bbs , this.mov , this.mov , this.mov , this.mov , this.mov , this.movx, this.not1, this.movy, this.movy, this.notx, this.popy, this.sleep,
-      this.bew , this.tcall,this.clr1, this.bbc , this.mov , this.mov , this.mov , this.mov , this.movx, this.movx, this.movm, this.movy, this.incy, this.movya,this.dbnzy,this.stop
+      this.beq , this.tcall,this.clr1, this.bbc , this.mov , this.mov , this.mov , this.mov , this.movx, this.movx, this.movm, this.movy, this.incy, this.movya,this.dbnzy,this.stop
     ];
 
   }

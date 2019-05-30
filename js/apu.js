@@ -174,7 +174,7 @@ function Apu(snes) {
         break;
       }
       case 0xf3: {
-        if(this.dspadr < 0x80) {
+        if(this.dspAdr < 0x80) {
           // TODO: write to dsp
         }
         break;

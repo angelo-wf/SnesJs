@@ -103,7 +103,7 @@ const opNames = [
 function getSpcTrace(cpu, cycles) {
   let str = "";
   str += getWordRep(cpu.br[0]) + ": ";
-  str += getSpcDisassembly(cpu) + " ";
+  str += getSpcDisassembly(cpu);
   str += "A:" + getByteRep(cpu.r[0]) + " ";
   str += "X:" + getByteRep(cpu.r[1]) + " ";
   str += "Y:" + getByteRep(cpu.r[2]) + " ";
@@ -142,10 +142,10 @@ function getSpcDisassembly(cpu) {
     case 1: str += " $" + getWordRep((cpu.br[0] + 2 + cpu.getSigned(p1)) & 0xffff) + end; break;
     case 2: str += " $" + getByteRep(p1) + end; break;
     case 3: {
-      if((op & 0xf) === 2) {
-        str += " $" + getByteRep(p1) + end + ", " + getWordRep((cpu.br[0] + 2 + cpu.getSigned(p2)) & 0xffff); break;
+      if((op & 0xf) === 3) {
+        str += " $" + getByteRep(p1) + end + ", " + getWordRep((cpu.br[0] + 3 + cpu.getSigned(p2)) & 0xffff); break;
       }
-      str += " $" + getByteRep(p1) + ", " + getWordRep((cpu.br[0] + 2 + cpu.getSigned(p2)) & 0xffff) + end; break;
+      str += " $" + getByteRep(p1) + ", " + getWordRep((cpu.br[0] + 3 + cpu.getSigned(p2)) & 0xffff) + end; break;
     }
     case 4: str += " $" + getWordRep(wo) + end; break;
     case 5: str += " (X)" + end; break;
@@ -165,7 +165,7 @@ function getSpcDisassembly(cpu) {
       }
       str += " $" + getWordRep(wob) + "." + wobd + end; break;
     }
-    case 17: str += " $" + getByteRep(p1) + "+X, " + getWordRep((cpu.br[0] + 2 + cpu.getSigned(p2)) & 0xffff) + end; break;
+    case 17: str += " $" + getByteRep(p1) + "+X, " + getWordRep((cpu.br[0] + 3 + cpu.getSigned(p2)) & 0xffff) + end; break;
     case 18: str += " [$" + getWordRep(wo) + "+X]" + end; break;
     case 19: str += " (X+)" + end; break;
   }
@@ -211,5 +211,5 @@ const spcOpEnd = [
   "", " 12", ".6", ".6", ", A", ", A", ", A", ", A", "", ", X",  ", C", ", Y", ", Y", "", "", "",
   "", " 13", ".6", ".6", ", A", ", A", ", A", ", A", ", X", ", X", ", YA", ", Y", "", "", "", "",
   "", " 14", ".7", ".7", "", "", "", "", "", "", "", "", "", "", "", "",
-  "", " 14", ".7", ".7", "", "", "", "", "", "", "", "", "", "", "", ""
+  "", " 15", ".7", ".7", "", "", "", "", "", "", "", "", "", "", "", ""
 ]
