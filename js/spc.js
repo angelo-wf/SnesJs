@@ -944,8 +944,12 @@ Spc = (function() {
 
     this.div = function(adr, adrh, instr) {
       let value = this.r[A] | (this.r[Y] << 8);
-      let result = (value / this.r[X]) & 0xffff;
-      let mod = value % this.r[X];
+      let result = 0xffff;
+      let mod = value & 0xff;
+      if(this.r[X] !== 0) {
+        result = (value / this.r[X]) & 0xffff;
+        mod = value % this.r[X];
+      }
       this.v = result > 0xff;
       this.h = (this.r[X] & 0xf) <= (this.r[Y] & 0xf);
       this.r[A] = result;

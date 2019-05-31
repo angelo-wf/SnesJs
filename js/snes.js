@@ -9,10 +9,38 @@ function Snes() {
 
   this.cart = undefined;
 
+  this.dmaOffs = [
+    0, 0, 0, 0,
+    0, 1, 0, 1,
+    0, 0, 1, 1,
+    0, 1, 2, 3,
+    0, 1, 0, 1,
+    0, 0, 0, 0,
+    0, 0, 1, 1
+  ]
+
+  this.dmaOffLengths = [1, 2, 2, 4, 4, 4, 2, 4];
+
+  // for dma
+  this.dmaBadr = new Uint8Array(8);
+  this.dmaAadr = new Uint16Array(8);
+  this.dmaAadrBank = new Uint8Array(8);
+  this.dmaSize = new Uint16Array(8);
+  this.hdmaIndBank = new Uint8Array(8);
+  this.hdmaTableAdr = new Uint16Array(8);
+  this.hdmaRepCount = new Uint8Array(8);
+
   this.reset = function(hard) {
     if(hard) {
       clearArray(this.ram);
     }
+    clearArray(this.dmaBadr);
+    clearArray(this.dmaAadr);
+    clearArray(this.dmaAadrBank);
+    clearArray(this.dmaSize);
+    clearArray(this.hdmaIndBank);
+    clearArray(this.hdmaTableAdr);
+    clearArray(this.hdmaRepCount);
 
     this.cpu.reset();
     this.apu.reset();
@@ -56,6 +84,27 @@ function Snes() {
 
     this.fastMem = false;
 
+    // dma and hdma
+    this.dmaTimer = 0;
+    this.hdmaTimer = 0;
+    this.dmaBusy = false;
+    this.dmaActive = [false, false, false, false, false, false, false, false];
+    this.hdmaActive = [false, false, false, false, false, false, false, false];
+
+    this.dmaMode = [0, 0, 0, 0, 0, 0, 0, 0];
+    this.dmaFixed = [false, false, false, false, false, false, false, false];
+    this.dmaDec = [false, false, false, false, false, false, false, false];
+    this.hdmaInd = [false, false, false, false, false, false, false, false];
+    this.dmaFromB = [false, false, false, false, false, false, false, false];
+
+    this.hdmaDoTransfer = [
+      false, false, false, false, false, false, false, false
+    ];
+    this.hdmaTerminated = [
+      false, false, false, false, false, false, false, false
+    ];
+    this.dmaOffIndex = 0;
+
   }
   this.reset();
 
@@ -68,7 +117,12 @@ function Snes() {
       this.joypad2Val = this.joypad2State;
     }
 
-    if(this.xPos < 536 || this.xPos >= 576) {
+    if(this.hdmaTimer > 0) {
+      this.hdmaTimer -= 2;
+    } else if(this.dmaBusy) {
+      this.handleDma();
+      //this.dmaBusy = false;
+    } else if (this.xPos < 536 || this.xPos >= 576) {
       // the cpu is paused for 40 cycles starting around dot 536
       this.cpuCycle();
     }
@@ -103,11 +157,15 @@ function Snes() {
     if(this.xPos === 1024) {
       // start of hblank
       this.inHblank = true;
+      if(!this.inVblank) {
+        // this.handleHdma();
+      }
     }
     if(this.xPos === 0) {
       // end of hblank
       this.inHblank = false;
     }
+
     // TODO: handle 239-line mode
     if(this.yPos === 225 && this.xPos === 0) {
       // start of vblank
@@ -126,6 +184,7 @@ function Snes() {
       // end of vblank
       this.inNmi = false;
       this.inVblank = false;
+      // this.initHdma();
     }
 
     if(this.autoJoyBusy) {
@@ -175,6 +234,57 @@ function Snes() {
   this.doAutoJoyRead = function() {
     this.joypad1AutoRead = this.joypad1State;
     this.joypad2AutoRead = this.joypad2State;
+  }
+
+  this.handleDma = function() {
+    if(this.dmaTimer > 0) {
+      this.dmaTimer -= 2;
+      return;
+    }
+    // loop over each dma channel to find the first active one
+    let i;
+    for(i = 0; i < 8; i++) {
+      if(this.dmaActive[i]) {
+        break;
+      }
+    }
+    if(i === 8) {
+      // no active channel left, dma is done
+      this.dmaBusy = false;
+      this.dmaOffIndex = 0;
+      return;
+    }
+    let tableOff = this.dmaMode[i] * 4 + this.dmaOffIndex++;
+    this.dmaOffIndex &= 0x3;
+    if(this.dmaFromB[i]) {
+      this.write(
+        (this.dmaAadrBank[i] << 16) | this.dmaAadr[i],
+        this.readBBus(
+          (this.dmaBadr[i] + this.dmaOffs[tableOff]) & 0xff
+        )
+      );
+    } else {
+      this.writeBBus(
+        (this.dmaBadr + this.dmaOffs[tableOff]) & 0xff,
+        this.read((this.dmaAadrBank << 16) | this.dmaAadr)
+      );
+    }
+    this.dmaTimer += 6;
+    // because this run through the function itself also cost 2 master cycles,
+    // we have to wait 6 more to get to 8 per byte transferred
+    if(!this.dmaFixed[i]) {
+      if(this.dmaDec[i]) {
+        this.dmaAadr[i]--;
+      } else {
+        this.dmaAadr[i]++;
+      }
+    }
+    this.dmaSize[i]--;
+    if(this.dmaSize[i] === 0) {
+      this.dmaOffIndex = 0;
+      this.dmaActive[i] = false;
+      this.dmaTimer += 8; // 8 extra cycles overhead per channel
+    }
   }
 
   // read and write handlers
@@ -236,17 +346,49 @@ function Snes() {
         // joypads 3 and 4 not emulated
         return 0;
       }
-      // ..421f
     }
 
     if(adr >= 0x4300 && adr < 0x4380) {
       let channel = (adr & 0xf0) >> 4;
       switch(adr & 0xff0f) {
         case 0x4300: {
-          // dma regs
-          return 0;
+          let val = this.dmaMode[channel];
+          val |= this.dmaFixed[channel] ? 0x8 : 0;
+          val |= this.dmaDec[channel] ? 0x10 : 0;
+          val |= this.hdmaInd[channel] ? 0x40 : 0;
+          val |= this.dmaFromB[channel] ? 0x80 : 0;
+          return val;
         }
-        // ..0x430c
+        case 0x4301: {
+          return this.dmaBadr[channel];
+        }
+        case 0x4302: {
+          return this.dmaAadr[channel] & 0xff;
+        }
+        case 0x4303: {
+          return (this.dmaAadr[channel] & 0xff00) >> 8;
+        }
+        case 0x4304: {
+          return this.dmaAadrBank[channel];
+        }
+        case 0x4305: {
+          return this.dmaSize[channel] & 0xff;
+        }
+        case 0x4306: {
+          return (this.dmaSize[channel] & 0xff00) >> 8;
+        }
+        case 0x4307: {
+          return this.hdmaIndBank[channel];
+        }
+        case 0x4308: {
+          return this.hdmaTableAdr[channel] & 0xff;
+        }
+        case 0x4309: {
+          return (this.hdmaTableAdr[channel] & 0xff00) >> 8;
+        }
+        case 0x430a: {
+          return this.hdmaRepCount[channel];
+        }
       }
     }
 
@@ -283,8 +425,12 @@ function Snes() {
         return;
       }
       case 0x4206: {
-        this.divResult = (this.divA / value) & 0xffff;
-        this.mulResult = this.divA % value;
+        this.divResult = 0xffff;
+        this.mulResult = this.divA;
+        if(value !== 0) {
+          this.divResult = (this.divA / value) & 0xffff;
+          this.mulResult = this.divA % value;
+        }
         return;
       }
       case 0x4207: {
@@ -305,10 +451,27 @@ function Snes() {
       }
       case 0x420b: {
         // enable dma
+        this.dmaActive[0] = (value & 0x1) > 0;
+        this.dmaActive[1] = (value & 0x2) > 0;
+        this.dmaActive[2] = (value & 0x4) > 0;
+        this.dmaActive[3] = (value & 0x8) > 0;
+        this.dmaActive[4] = (value & 0x10) > 0;
+        this.dmaActive[5] = (value & 0x20) > 0;
+        this.dmaActive[6] = (value & 0x40) > 0;
+        this.dmaActive[7] = (value & 0x80) > 0;
+        this.dmaBusy = value > 0;
+        this.dmaTimer += 8;
         return;
       }
       case 0x420c: {
-        // enable hdma
+        this.hdmaActive[0] = (value & 0x1) > 0;
+        this.hdmaActive[1] = (value & 0x2) > 0;
+        this.hdmaActive[2] = (value & 0x4) > 0;
+        this.hdmaActive[3] = (value & 0x8) > 0;
+        this.hdmaActive[4] = (value & 0x10) > 0;
+        this.hdmaActive[5] = (value & 0x20) > 0;
+        this.hdmaActive[6] = (value & 0x40) > 0;
+        this.hdmaActive[7] = (value & 0x80) > 0;
         return;
       }
       case 0x420d: {
@@ -321,10 +484,57 @@ function Snes() {
       let channel = (adr & 0xf0) >> 4;
       switch(adr & 0xff0f) {
         case 0x4300: {
-          // dma regs
+          this.dmaMode[channel] = value & 0x7;
+          this.dmaFixed[channel] = (value & 0x08) > 0;
+          this.dmaDec[channel] = (value & 0x10) > 0;
+          this.hdmaInd[channel] = (value & 0x40) > 0;
+          this.dmaFromB[channel] = (value & 0x80) > 0;
           return;
         }
-        // ..0x430c
+        case 0x4301: {
+          this.dmaBadr[channel] = value;
+          return;
+        }
+        case 0x4302: {
+          this.dmaAadr[channel] = (this.dmaAadr[channel] & 0xff00) | value;
+          return;
+        }
+        case 0x4303: {
+          this.dmaAadr[channel] = (this.dmaAadr[channel] & 0xff) | (value << 8);
+          return;
+        }
+        case 0x4304: {
+          this.dmaAadrBank[channel] = value;
+          return;
+        }
+        case 0x4305: {
+          this.dmaSize[channel] = (this.dmaSize[channel] & 0xff00) | value;
+          return;
+        }
+        case 0x4306: {
+          this.dmaSize[channel] = (this.dmaSize[channel] & 0xff) | (value << 8);
+          return;
+        }
+        case 0x4307: {
+          this.hdmaIndBank[channel] = value;
+          return;
+        }
+        case 0x4308: {
+          this.hdmaTableAdr[channel] = (
+            this.hdmaTableAdr[channel] & 0xff00
+          ) | value;
+          return;
+        }
+        case 0x4309: {
+          this.hdmaTableAdr[channel] = (
+            this.hdmaTableAdr[channel] & 0xff
+          ) | (value << 8);
+          return;
+        }
+        case 0x430a: {
+          this.hdmaRepCount[channel] = value;
+          return;
+        }
       }
     }
   }
