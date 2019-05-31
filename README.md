@@ -1,7 +1,7 @@
 # SnesJs
 A SNES emulator, in javascript
 
-My attempt at making a SNES emulator in Javascript. Currently working on the SPC emulation.
+My attempt at making a SNES emulator in Javascript. Currently working on the PPU emulation.
 
 This will probably never end up being an accurate emulator, but I hope to have some games running at least. There is also a pretty big chance that it won't be able to run at full speed.
 

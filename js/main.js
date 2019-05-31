@@ -117,18 +117,22 @@ function loadRom(rom) {
 }
 
 function runFrame() {
+
+  snes.runFrame();
+
+  // let str = "";
+  // let cyc = 0;
   // for(let i = 0; i < 100; i++) {
   //   do {
   //     snes.cycle();
-  //   } while(snes.cpu.cyclesLeft > 0);
-  //   log(getTrace(snes.cpu, snes.cycles));
-  //
-  //   do {
-  //     snes.cycle();
-  //   } while(snes.apu.spc.cyclesLeft > 0);
-  //   log(getSpcTrace(snes.apu.spc, snes.cycles));
+  //     cyc++;
+  //   } while(snes.cpuCyclesLeft > 0);
+  //   str += getTrace(snes.cpu, cyc) + "\n";
   // }
-  snes.runFrame();
+  // log(str);
+
+  snes.setPixels(imgData.data);
+  ctx.putImageData(imgData, 0, 0);
 }
 
 function update() {

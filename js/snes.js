@@ -3,6 +3,8 @@ function Snes() {
 
   this.cpu = new Cpu(this);
 
+  this.ppu = new Ppu(this);
+
   this.apu = new Apu(this);
 
   this.ram = new Uint8Array(0x20000);
@@ -43,13 +45,14 @@ function Snes() {
     clearArray(this.hdmaRepCount);
 
     this.cpu.reset();
+    this.ppu.reset();
     this.apu.reset();
 
     this.xPos = 0;
     this.yPos = 0;
     this.frames = 0;
 
-    this.cpuCyclesLeft = 0;
+    this.cpuCyclesLeft = 5 * 8 + 12; // reset: 5 read cycles + 2 IO cycles
     this.cpuMemOps = 0;
 
     // for cpu-ports
@@ -121,14 +124,9 @@ function Snes() {
       this.hdmaTimer -= 2;
     } else if(this.dmaBusy) {
       this.handleDma();
-      //this.dmaBusy = false;
     } else if (this.xPos < 536 || this.xPos >= 576) {
       // the cpu is paused for 40 cycles starting around dot 536
       this.cpuCycle();
-    }
-
-    if(this.xPos === 0) {
-      // this.ppu.renderLine(this.yPos);
     }
 
     if(this.yPos === this.vTimer && this.vIrqEnabled) {
@@ -160,10 +158,10 @@ function Snes() {
       if(!this.inVblank) {
         // this.handleHdma();
       }
-    }
-    if(this.xPos === 0) {
+    } else if(this.xPos === 0) {
       // end of hblank
       this.inHblank = false;
+      // this.ppu.renderLine(this.yPos);
     }
 
     // TODO: handle 239-line mode
@@ -179,8 +177,7 @@ function Snes() {
       if(this.nmiEnabled) {
         this.cpu.nmiWanted = true;
       }
-    }
-    if(this.yPos === 0 && this.xPos === 0) {
+    } else if(this.yPos === 0 && this.xPos === 0) {
       // end of vblank
       this.inNmi = false;
       this.inVblank = false;
@@ -252,6 +249,7 @@ function Snes() {
       // no active channel left, dma is done
       this.dmaBusy = false;
       this.dmaOffIndex = 0;
+      log("Finished DMA");
       return;
     }
     let tableOff = this.dmaMode[i] * 4 + this.dmaOffIndex++;
@@ -461,6 +459,7 @@ function Snes() {
         this.dmaActive[7] = (value & 0x80) > 0;
         this.dmaBusy = value > 0;
         this.dmaTimer += 8;
+        log("DMA start write: " + getByteRep(value));
         return;
       }
       case 0x420c: {
@@ -541,7 +540,7 @@ function Snes() {
 
   this.readBBus = function(adr) {
     if(adr > 0x33 && adr < 0x40) {
-      // return this.ppu.read(adr);
+      return this.ppu.read(adr);
     }
     switch(adr) {
       case 0x40:
@@ -559,7 +558,7 @@ function Snes() {
 
   this.writeBBus = function(adr, value) {
     if(adr < 0x34) {
-      //this.ppu.write(adr, value);
+      this.ppu.write(adr, value);
       return;
     }
     switch(adr) {
@@ -652,6 +651,12 @@ function Snes() {
 
     }
     this.cart.write(bank, adr, value);
+  }
+
+  // getting audio and video out
+
+  this.setPixels = function(arr) {
+    this.ppu.setPixels(arr);
   }
 
   // rom loading and header parsing
