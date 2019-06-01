@@ -8,8 +8,9 @@ function Lorom(data, header) {
   this.banks = header.romSize / 0x8000;
   this.sramSize = header.ramSize;
   log(
-    "$8000 byte banks: " + this.banks +
-    "; sram size: " + getWordRep(this.sramSize)
+    "Loaded LROM rom: \"" + header.name + "\"; " +
+    "Banks: " + this.banks +
+    "; Sram size: $" + getWordRep(this.sramSize)
   );
 
   this.reset = function(hard) {

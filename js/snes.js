@@ -14,6 +14,7 @@ function Snes() {
   this.dmaOffs = [
     0, 0, 0, 0,
     0, 1, 0, 1,
+    0, 0, 0, 0,
     0, 0, 1, 1,
     0, 1, 2, 3,
     0, 1, 0, 1,
@@ -553,7 +554,9 @@ function Snes() {
         return this.apu.spcWritePorts[adr - 0x40];
       }
       case 0x80: {
-        return this.ram[this.ramAdr];
+        let val = this.ram[this.ramAdr++];
+        this.ramAdr &= 0x1ffff;
+        return val;
       }
     }
     return 0; // rest not readable
@@ -573,7 +576,8 @@ function Snes() {
         return;
       }
       case 0x80: {
-        this.ram[this.ramAdr] = value;
+        this.ram[this.ramAdr++] = value;
+        this.ramAdr &= 0x1ffff;
         return;
       }
       case 0x81: {
@@ -683,7 +687,6 @@ function Snes() {
       return false;
     }
     this.cart = new Lorom(rom, header);
-    log("Loaded rom: " + header.name);
     return true;
   }
 
