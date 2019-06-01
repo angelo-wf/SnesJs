@@ -112,8 +112,12 @@ Spc = (function() {
         let mode = this.modes[instr];
         this.cyclesLeft = this.cycles[instr];
 
-        let eff = this.getAdr(mode);
-        this.functions[instr].call(this, eff[0], eff[1], instr);
+        try {
+          let eff = this.getAdr(mode);
+          this.functions[instr].call(this, eff[0], eff[1], instr);
+        } catch(e) {
+          log("Error with opcode " + getByteRep(instr) + ": " + e);
+        }
       }
       this.cyclesLeft--;
     }
@@ -996,7 +1000,7 @@ Spc = (function() {
       this.bcs , this.tcall,this.clr1, this.bbc , this.sbc , this.sbc , this.sbc , this.sbc , this.sbcm, this.sbcm, this.movw, this.inc , this.inca, this.movpx,this.das , this.mov ,
       this.di  , this.tcall,this.set1, this.bbs , this.movs, this.movs, this.movs, this.movs, this.cmpx, this.movsx,this.mov1s,this.movsy,this.movsy,this.movx, this.popx, this.mul ,
       this.bne , this.tcall,this.clr1, this.bbc , this.movs, this.movs, this.movs, this.movs, this.movsx,this.movsx,this.movws,this.movsy,this.decy, this.movay,this.cbne, this.daa ,
-      this.clrv, this.tcall,this.set1, this.bbs , this.mov , this.mov , this.mov , this.mov , this.mov , this.movx, this.not1, this.movy, this.movy, this.notx, this.popy, this.sleep,
+      this.clrv, this.tcall,this.set1, this.bbs , this.mov , this.mov , this.mov , this.mov , this.mov , this.movx, this.not1, this.movy, this.movy, this.notc, this.popy, this.sleep,
       this.beq , this.tcall,this.clr1, this.bbc , this.mov , this.mov , this.mov , this.mov , this.movx, this.movx, this.movm, this.movy, this.incy, this.movya,this.dbnzy,this.stop
     ];
 

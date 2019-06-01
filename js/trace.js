@@ -30,16 +30,6 @@ function getFlags(cpu) {
 }
 
 function getDisassembly(cpu) {
-  if(cpu.abortWanted) {
-    return "abort\t\t";
-  }
-  if(cpu.nmiWanted) {
-    return "nmi\t\t";
-  }
-  if(cpu.irqWanted) {
-    return "irq\t\t";
-  }
-
   let op = cpu.mem.read((cpu.r[1] << 16) | cpu.br[4]);
   let p1 = cpu.mem.read((cpu.r[1] << 16) | ((cpu.br[4] + 1) & 0xffff));
   let p2 = cpu.mem.read((cpu.r[1] << 16) | ((cpu.br[4] + 2) & 0xffff));

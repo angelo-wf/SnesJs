@@ -47,6 +47,9 @@ function Snes() {
     this.cpu.reset();
     this.ppu.reset();
     this.apu.reset();
+    if(this.cart) {
+      this.cart.reset(hard);
+    }
 
     this.xPos = 0;
     this.yPos = 0;
@@ -249,7 +252,7 @@ function Snes() {
       // no active channel left, dma is done
       this.dmaBusy = false;
       this.dmaOffIndex = 0;
-      log("Finished DMA");
+      //log("Finished DMA");
       return;
     }
     let tableOff = this.dmaMode[i] * 4 + this.dmaOffIndex++;
@@ -263,8 +266,8 @@ function Snes() {
       );
     } else {
       this.writeBBus(
-        (this.dmaBadr + this.dmaOffs[tableOff]) & 0xff,
-        this.read((this.dmaAadrBank << 16) | this.dmaAadr)
+        (this.dmaBadr[i] + this.dmaOffs[tableOff]) & 0xff,
+        this.read((this.dmaAadrBank[i] << 16) | this.dmaAadr[i])
       );
     }
     this.dmaTimer += 6;
@@ -294,7 +297,7 @@ function Snes() {
       case 0x4210: {
         let val = 0x1;
         val |= this.inNmi ? 0x80 : 0;
-        this.inVNmi = false;
+        this.inNmi = false;
         return val;
       }
       case 0x4211: {
@@ -459,7 +462,7 @@ function Snes() {
         this.dmaActive[7] = (value & 0x80) > 0;
         this.dmaBusy = value > 0;
         this.dmaTimer += 8;
-        log("DMA start write: " + getByteRep(value));
+        //log("DMA start write: " + getByteRep(value));
         return;
       }
       case 0x420c: {
@@ -595,7 +598,7 @@ function Snes() {
     adr &= 0xffff;
     if(bank === 0x7e || bank === 0x7f) {
       // banks 7e and 7f
-      return this.ram[(bank & 0x1) | 0xffff];
+      return this.ram[((bank & 0x1) << 16) | adr];
     }
     if(adr < 0x8000 && (bank < 0x40 || (bank >= 0x80 && bank < 0xc0))) {
       // banks 00-3f, 80-bf, $0000-$7fff
@@ -632,7 +635,7 @@ function Snes() {
     adr &= 0xffff;
     if(bank === 0x7e || bank === 0x7f) {
       // banks 7e and 7f
-      this.ram[(bank & 0x1) | 0xffff] = value;
+      this.ram[((bank & 0x1) << 16) | adr] = value;
     }
     if(adr < 0x8000 && (bank < 0x40 || (bank >= 0x80 && bank < 0xc0))) {
       // banks 00-3f, 80-bf, $0000-$7fff

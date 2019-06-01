@@ -12,6 +12,8 @@ let pausedInBg = false;
 
 let snes = new Snes();
 
+let logging = false;
+
 zip.workerScriptsPath = "lib/";
 zip.useWebWorkers = false;
 
@@ -118,18 +120,20 @@ function loadRom(rom) {
 
 function runFrame() {
 
-  snes.runFrame();
-
-  // let str = "";
-  // let cyc = 0;
-  // for(let i = 0; i < 100; i++) {
-  //   do {
-  //     snes.cycle();
-  //     cyc++;
-  //   } while(snes.cpuCyclesLeft > 0);
-  //   str += getTrace(snes.cpu, cyc) + "\n";
-  // }
-  // log(str);
+  if(logging) {
+    let str = "";
+    let cyc = 0;
+    for(let i = 0; i < 100; i++) {
+      do {
+        snes.cycle();
+        cyc++;
+      } while(snes.cpuCyclesLeft > 0);
+      str += getTrace(snes.cpu, cyc) + "\n";
+    }
+    log(str);
+  } else {
+    snes.runFrame();
+  }
 
   snes.setPixels(imgData.data);
   ctx.putImageData(imgData, 0, 0);
@@ -138,6 +142,15 @@ function runFrame() {
 function update() {
   runFrame();
   loopId = requestAnimationFrame(update);
+}
+
+window.onkeydown = function(e) {
+  switch(e.key) {
+    case "l":
+    case "L": {
+      logging = !logging;
+    }
+  }
 }
 
 function log(text) {
