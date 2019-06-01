@@ -20,5 +20,6 @@ Resources that I used for implementing this:
 - The [nocach fullsnes document](https://problemkaputt.de/fullsnes.txt).
 - Some posts in the [SnesDev section](https://forums.nesdev.com/viewforum.php?f=12) of the NesDev forums.
 - The [Super NES Programming pages](https://en.wikibooks.org/wiki/Super_NES_Programming) in Wikibooks.
+- The CPU tests by PeterLemon found [here](https://github.com/PeterLemon/SNES).
 - Some of the wrapper code is based on my [NES emulator](https://github.com/elzo-d/NesJs).
 - The [zip.js](https://gildas-lormeau.github.io/zip.js/) library is used for zipped rom loading support.

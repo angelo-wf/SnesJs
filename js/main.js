@@ -3,7 +3,9 @@ let c = el("output");
 c.width = 512;
 c.height = 480;
 let ctx = c.getContext("2d");
-let imgData = ctx.createImageData(512, 480);
+ctx.fillStyle = "#000000";
+ctx.fillRect(0, 0, 512, 480);
+let imgData = ctx.getImageData(0, 0, 512, 480);
 
 let loopId = 0;
 let loaded = false;
@@ -16,6 +18,21 @@ let logging = false;
 
 zip.workerScriptsPath = "lib/";
 zip.useWebWorkers = false;
+
+let controlsP1 = {
+  z: 0, // B
+  a: 1, // Y
+  shift: 2, // select
+  enter: 3, // start
+  arrowup: 4, // up
+  arrowdown: 5, // down
+  arrowleft: 6, // left
+  arrowright: 7, // right
+  x: 8, // A
+  s: 9, // X
+  d: 10, // L
+  c: 11 // R
+}
 
 el("rom").onchange = function(e) {
   //audioHandler.resume();
@@ -150,6 +167,17 @@ window.onkeydown = function(e) {
     case "L": {
       logging = !logging;
     }
+  }
+  if(controlsP1[e.key.toLowerCase()] !== undefined) {
+    e.preventDefault();
+    snes.setPad1ButtonPressed(controlsP1[e.key.toLowerCase()]);
+  }
+}
+
+window.onkeyup = function(e) {
+  if(controlsP1[e.key.toLowerCase()] !== undefined) {
+    e.preventDefault();
+    snes.setPad1ButtonReleased(controlsP1[e.key.toLowerCase()]);
   }
 }
 

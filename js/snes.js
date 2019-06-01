@@ -165,7 +165,7 @@ function Snes() {
     } else if(this.xPos === 0) {
       // end of hblank
       this.inHblank = false;
-      // this.ppu.renderLine(this.yPos);
+      this.ppu.renderLine(this.yPos);
     }
 
     // TODO: handle 239-line mode
@@ -233,8 +233,18 @@ function Snes() {
   }
 
   this.doAutoJoyRead = function() {
-    this.joypad1AutoRead = this.joypad1State;
-    this.joypad2AutoRead = this.joypad2State;
+    this.joypad1AutoRead = 0;
+    this.joypad2AutoRead = 0;
+    this.joypad1Val = this.joypad1State;
+    this.joypad2Val = this.joypad2State;
+    for(let i = 0; i < 16; i++) {
+      let bit = this.joypad1Val & 0x1;
+      this.joypad1Val >>= 1;
+      this.joypad1AutoRead |= (bit << (15 - i));
+      bit = this.joypad2Val & 0x1;
+      this.joypad2Val >>= 1;
+      this.joypad2AutoRead |= (bit << (15 - i));
+    }
   }
 
   this.handleDma = function() {
@@ -272,7 +282,7 @@ function Snes() {
       );
     }
     this.dmaTimer += 6;
-    // because this run through the function itself also cost 2 master cycles,
+    // because this run through the function itself also costs 2 master cycles,
     // we have to wait 6 more to get to 8 per byte transferred
     if(!this.dmaFixed[i]) {
       if(this.dmaDec[i]) {
@@ -462,7 +472,7 @@ function Snes() {
         this.dmaActive[6] = (value & 0x40) > 0;
         this.dmaActive[7] = (value & 0x80) > 0;
         this.dmaBusy = value > 0;
-        this.dmaTimer += 8;
+        this.dmaTimer += this.dmaBusy ? 8 : 0;
         //log("DMA start write: " + getByteRep(value));
         return;
       }
@@ -660,10 +670,18 @@ function Snes() {
     this.cart.write(bank, adr, value);
   }
 
-  // getting audio and video out
+  // getting audio and video out, controllers in
 
   this.setPixels = function(arr) {
     this.ppu.setPixels(arr);
+  }
+
+  this.setPad1ButtonPressed = function(num) {
+    this.joypad1State |= (1 << num);
+  }
+
+  this.setPad1ButtonReleased = function(num) {
+    this.joypad1State &= (~(1 << num)) & 0xfff;
   }
 
   // rom loading and header parsing
@@ -703,6 +721,11 @@ function Snes() {
       romSize: 0x400 << rom[0x7fd7],
       ramSize: 0x400 << rom[0x7fd8]
     };
+    if(header.romSize < 0x8000) {
+      // probably wrong header?
+      // seems to help with snes test program and such
+      header.romSize = rom.length;
+    }
     return header;
   }
 
