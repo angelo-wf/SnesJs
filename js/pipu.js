@@ -12,7 +12,7 @@ function Ppu(snes) {
 
   this.pixelOutput = new Uint16Array(512*240);
 
-  this.layersPerMode = new Uint8Array([
+  this.layersPerMode = [
     4, 0, 1, 4, 0, 1, 4, 2, 3, 4, 2, 3,
     4, 0, 1, 4, 0, 1, 4, 2, 4, 2, 5, 5,
     4, 0, 4, 1, 4, 0, 4, 1, 5, 5, 5, 5,
@@ -20,10 +20,11 @@ function Ppu(snes) {
     4, 0, 4, 1, 4, 0, 4, 1, 5, 5, 5, 5,
     4, 0, 4, 1, 4, 0, 4, 1, 5, 5, 5, 5,
     4, 0, 4, 4, 0, 4, 5, 5, 5, 5, 5, 5,
-    4, 4, 4, 0, 4, 5, 5, 5, 5, 5, 5, 5
-  ]);
+    4, 4, 4, 0, 4, 5, 5, 5, 5, 5, 5, 5,
+    2, 4, 0, 1, 4, 0, 1, 4, 2, 4, 5, 5,
+  ];
 
-  this.prioPerMode = new Uint8Array([
+  this.prioPerMode = [
     3, 1, 1, 2, 0, 0, 1, 1, 1, 0, 0, 0,
     3, 1, 1, 2, 0, 0, 1, 1, 0, 0, 5, 5,
     3, 1, 2, 1, 1, 0, 0, 0, 5, 5, 5, 5,
@@ -31,10 +32,11 @@ function Ppu(snes) {
     3, 1, 2, 1, 1, 0, 0, 0, 5, 5, 5, 5,
     3, 1, 2, 1, 1, 0, 0, 0, 5, 5, 5, 5,
     3, 1, 2, 1, 0, 0, 5, 5, 5, 5, 5, 5,
-    3, 2, 1, 0, 0, 5, 5, 5, 5, 5, 5, 5
-  ]);
+    3, 2, 1, 0, 0, 5, 5, 5, 5, 5, 5, 5,
+    1, 3, 1, 1, 2, 0, 0, 1, 0, 0, 5, 5,
+  ];
 
-  this.bitPerMode = new Uint8Array([
+  this.bitPerMode = [
     2, 2, 2, 2,
     4, 4, 2, 5,
     4, 4, 5, 5,
@@ -42,10 +44,11 @@ function Ppu(snes) {
     8, 2, 5, 5,
     4, 2, 5, 5,
     4, 5, 5, 5,
-    8, 5, 5, 5
-  ]);
+    8, 5, 5, 5,
+    4, 4, 2, 5
+  ];
 
-  this.layercountPerMode = new Uint8Array([12, 10, 8, 8, 8, 8, 6, 5]);
+  this.layercountPerMode = [12, 10, 8, 8, 8, 8, 6, 5, 10];
 
   this.reset = function() {
 
@@ -80,6 +83,7 @@ function Ppu(snes) {
     this.layer3Prio = false;
 
     this.mainScreenEnabled = [false, false, false, false, false];
+    this.subScreenEnabled = [false, false, false, false, false];
 
   }
   this.reset();
@@ -87,21 +91,34 @@ function Ppu(snes) {
   this.renderLine = function(line) {
     if(line > 0 && line < 225) {
       // visible line
+      let modeIndex = this.layer3Prio && this.mode === 1 ? 96 : 12 * this.mode;
+      let count = this.layercountPerMode[this.mode];
       for(let i = 0; i < 256; i++) {
         // for each pixel
 
         let pixel = 0;
-        for(let j = 0; j < this.layercountPerMode[this.mode]; j++) {
+        for(let j = 0; j < count; j++) {
           let x = i
           let y = line;
-          let layer = this.layersPerMode[this.mode * 12 + j];
-          if(layer < 4 && this.mainScreenEnabled[layer]) {
+          let layer = this.layersPerMode[modeIndex + j];
+          if(layer < 4 && (
+            this.mainScreenEnabled[layer] || this.subScreenEnabled[layer]
+          )) {
             x += this.bgHoff[layer];
             y += this.bgVoff[layer];
             pixel = this.getPixelForLayer(
               x, y,
               layer,
-              this.prioPerMode[this.mode * 12 + j]
+              this.prioPerMode[modeIndex + j]
+            );
+          } else if(
+            this.mainScreenEnabled[layer] || this.subScreenEnabled[layer]
+          ) {
+            // sprite layer, don't change x and y
+            pixel = this.getPixelForLayer(
+              x, y,
+              layer,
+              this.prioPerMode[modeIndex + j]
             );
           }
           if(pixel > 0) {
@@ -131,7 +148,7 @@ function Ppu(snes) {
       // not the right priority
       return 0;
     }
-    let tileNum = mapWord & 0x1ff;
+    let tileNum = mapWord & 0x3ff;
     let paletteNum = (mapWord & 0x1c00) >> 10;
     let xShift = (mapWord & 0x4000) > 0 ? (x & 0x7) : 7 - (x & 0x7);
     let yRow = (mapWord & 0x8000) > 0 ? 7 - (y & 0x7) : (y & 0x7);
@@ -334,6 +351,14 @@ function Ppu(snes) {
         this.mainScreenEnabled[2] = (value & 0x4) > 0;
         this.mainScreenEnabled[3] = (value & 0x8) > 0;
         this.mainScreenEnabled[4] = (value & 0x10) > 0;
+        return;
+      }
+      case 0x2d: {
+        this.subScreenEnabled[0] = (value & 0x1) > 0;
+        this.subScreenEnabled[1] = (value & 0x2) > 0;
+        this.subScreenEnabled[2] = (value & 0x4) > 0;
+        this.subScreenEnabled[3] = (value & 0x8) > 0;
+        this.subScreenEnabled[4] = (value & 0x10) > 0;
         return;
       }
     }

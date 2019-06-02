@@ -187,7 +187,7 @@ Cpu = (function() {
       this.cyclesLeft--;
     }
 
-    this.getP = function(bFlag) {
+    this.getP = function() {
       let val = 0;
       val |= this.n ? 0x80 : 0;
       val |= this.v ? 0x40 : 0;
@@ -665,8 +665,7 @@ Cpu = (function() {
         this.setZandN(result, this.m);
         this.br[A] = (this.br[A] & 0xff00) | (result & 0xff);
       } else {
-        let value = this.readWord(adr, adrh);
-        value ^= 0xffff;
+        let value = this.readWord(adr, adrh) ^ 0xffff;
         this.cyclesLeft++; // 1 extra cycle if m = 0
         let result = this.br[A] + value + (this.c ? 1 : 0);
         this.v = (
@@ -686,8 +685,7 @@ Cpu = (function() {
         this.c = result > 0xff;
         this.setZandN(result, this.m);
       } else {
-        let value = this.readWord(adr, adrh);
-        value ^= 0xffff;
+        let value = this.readWord(adr, adrh) ^ 0xffff;
         this.cyclesLeft++; // 1 extra cycle if m = 0
         let result = this.br[A] + value + 1;
         this.c = result > 0xffff;
@@ -702,8 +700,7 @@ Cpu = (function() {
         this.c = result > 0xff;
         this.setZandN(result, this.x);
       } else {
-        let value = this.readWord(adr, adrh);
-        value ^= 0xffff;
+        let value = this.readWord(adr, adrh) ^ 0xffff;
         this.cyclesLeft++; // 1 extra cycle if x = 0
         let result = this.br[X] + value + 1;
         this.c = result > 0xffff;
@@ -718,8 +715,7 @@ Cpu = (function() {
         this.c = result > 0xff;
         this.setZandN(result, this.x);
       } else {
-        let value = this.readWord(adr, adrh);
-        value ^= 0xffff;
+        let value = this.readWord(adr, adrh) ^ 0xffff;
         this.cyclesLeft++; // 1 extra cycle if x = 0
         let result = this.br[Y] + value + 1;
         this.c = result > 0xffff;
@@ -903,7 +899,7 @@ Cpu = (function() {
         let result = this.br[A] & value;
         value = (value & ~this.br[A]) & 0xffff;
         this.z = result === 0;
-        this.writeWord(adr, adrh, result);
+        this.writeWord(adr, adrh, value);
       }
     }
 
@@ -920,7 +916,7 @@ Cpu = (function() {
         let result = this.br[A] & value;
         value = (value | this.br[A]) & 0xffff;
         this.z = result === 0;
-        this.writeWord(adr, adrh, result);
+        this.writeWord(adr, adrh, value);
       }
     }
 

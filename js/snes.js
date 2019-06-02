@@ -411,8 +411,8 @@ function Snes() {
     switch(adr) {
       case 0x4200: {
         this.autoJoyRead = (value & 0x1) > 0;
-        this.vIrqEnabled = (value & 0x10) > 0;
-        this.hIrqEnabled = (value & 0x20) > 0;
+        this.hIrqEnabled = (value & 0x10) > 0;
+        this.vIrqEnabled = (value & 0x20) > 0;
         this.nmiEnabled = (value & 0x80) > 0;
         return;
       }
