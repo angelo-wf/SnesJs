@@ -75,6 +75,7 @@ function Snes() {
     this.autoJoyRead = false;
     this.autoJoyBusy = false;
     this.autoJoyTimer = 0;
+    this.ppuLatch = false;
 
     this.joypad1Val = 0;
     this.joypad2Val = 0;
@@ -221,9 +222,9 @@ function Snes() {
       this.cpu.cycle();
       // TODO: proper memory cycle timings, do all as 6 now,
       // to somewhat approximate correct timing for mem ops
-      this.cpuCyclesLeft += (this.cpu.cyclesLeft - this.cpuMemOps) * 6;
+      this.cpuCyclesLeft += (this.cpu.cyclesLeft + 1 - this.cpuMemOps) * 6;
     }
-    this.cpuCyclesLeft--;
+    this.cpuCyclesLeft -= 2;
   }
 
   this.runFrame = function() {
@@ -325,7 +326,7 @@ function Snes() {
       }
       case 0x4213: {
         // IO read register
-        return 0;
+        return this.ppuLatch ? 0x80 : 0;
       }
       case 0x4214: {
         return this.divResult & 0xff;
@@ -418,6 +419,7 @@ function Snes() {
       }
       case 0x4201: {
         // IO port
+        this.ppuLatch = (value & 0x80) > 0;
         return;
       }
       case 0x4202: {

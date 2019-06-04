@@ -135,7 +135,7 @@ Spc = (function() {
       return value;
     }
 
-    this.setP = function(val) {
+    this.setP = function(value) {
       this.n = (value & 0x80) > 0;
       this.v = (value & 0x40) > 0;
       this.p = (value & 0x20) > 0;

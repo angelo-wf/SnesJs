@@ -10,7 +10,7 @@ function Ppu(snes) {
   this.oam = new Uint16Array(0x100);
   this.highOam = new Uint16Array(0x10);
 
-  this.pixelOutput = new Uint16Array(512*240);
+  this.pixelOutput = new Uint16Array(512*3*240);
 
   this.layersPerMode = [
     4, 0, 1, 4, 0, 1, 4, 2, 3, 4, 2, 3,
@@ -50,6 +50,10 @@ function Ppu(snes) {
 
   this.layercountPerMode = [12, 10, 8, 8, 8, 8, 6, 5, 10];
 
+  this.brightnessMults = [
+    0.1, 0.5, 1.1, 1.6, 2.2, 2.7, 3.3, 3.8, 4.4, 4.9, 5.5, 6, 6.6, 7.1, 7.6, 8.2
+  ];
+
   this.reset = function() {
 
     clearArray(this.vram);
@@ -74,16 +78,33 @@ function Ppu(snes) {
     this.tilemapAdr = [0, 0, 0, 0];
     this.tileAdr = [0, 0, 0, 0];
 
-    this.bgHoff = [0, 0, 0, 0];
-    this.bgVoff = [0, 0, 0, 0];
+    this.bgHoff = [0, 0, 0, 0, 0];
+    this.bgVoff = [0, 0, 0, 0, 0];
     this.offPrev1 = 0;
     this.offPrev2 = 0;
 
     this.mode = 0;
     this.layer3Prio = false;
+    this.bigTiles = [false, false, false, false, false];
+
+    this.mosaicEnabled = [false, false, false, false, false];
+    this.mosaicSize = 0;
 
     this.mainScreenEnabled = [false, false, false, false, false];
     this.subScreenEnabled = [false, false, false, false, false];
+
+    this.forcedBlank = true;
+    this.brightness = 0;
+
+    this.oamAdr = 0;
+    this.oamInHigh = false;
+    this.objPriority = false;
+    this.oamSecond = false;
+    this.oamBuffer = false;
+
+    this.sprAdr1 = 0;
+    this.sprAdr2 = 0;
+    this.objSize = 0;
 
   }
   this.reset();
@@ -91,43 +112,64 @@ function Ppu(snes) {
   this.renderLine = function(line) {
     if(line > 0 && line < 225) {
       // visible line
+      if(line === 1) {
+        this.mosaicStartLine = 1;
+      }
       let modeIndex = this.layer3Prio && this.mode === 1 ? 96 : 12 * this.mode;
       let count = this.layercountPerMode[this.mode];
-      for(let i = 0; i < 256; i++) {
+      let bMult = this.brightnessMults[this.brightness];
+      let i = 0;
+      while(i < 256) {
         // for each pixel
 
-        let pixel = 0;
-        for(let j = 0; j < count; j++) {
-          let x = i
-          let y = line;
-          let layer = this.layersPerMode[modeIndex + j];
-          if(layer < 4 && (
-            this.mainScreenEnabled[layer] || this.subScreenEnabled[layer]
-          )) {
-            x += this.bgHoff[layer];
-            y += this.bgVoff[layer];
-            pixel = this.getPixelForLayer(
-              x, y,
-              layer,
-              this.prioPerMode[modeIndex + j]
-            );
-          } else if(
-            this.mainScreenEnabled[layer] || this.subScreenEnabled[layer]
-          ) {
-            // sprite layer, don't change x and y
-            pixel = this.getPixelForLayer(
-              x, y,
-              layer,
-              this.prioPerMode[modeIndex + j]
-            );
-          }
-          if(pixel > 0) {
-            break;
-          }
-        }
+        let r1 = 0;
+        let g1 = 0;
+        let b1 = 0;
+        let r2 = 0;
+        let g2 = 0;
+        let b2 = 0;
 
-        this.pixelOutput[line * 512 + 2 * i] = this.cgram[pixel];
-        this.pixelOutput[line * 512 + 2 * i + 1] = this.cgram[pixel];
+        if(!this.forcedBlank) {
+
+          let pixel = 0;
+          for(let j = 0; j < count; j++) {
+            let x = i
+            let y = line;
+            let layer = this.layersPerMode[modeIndex + j];
+            if(layer < 4 && (
+              this.mainScreenEnabled[layer] || this.subScreenEnabled[layer]
+            )) {
+              if(this.mosaicEnabled[layer] && this.mosaicSize > 0) {
+                x -= x % this.mosaicSize;
+                y -= (y - this.mosaicStartLine) % this.mosaicSize;
+              }
+              x += this.bgHoff[layer];
+              y += this.bgVoff[layer];
+              pixel = this.getPixelForLayer(
+                x, y,
+                layer,
+                this.prioPerMode[modeIndex + j]
+              );
+            }
+            if(pixel > 0) {
+              break;
+            }
+          }
+          r1 = ((this.cgram[pixel] & 0x1f) * bMult) & 0xff;
+          g1 = (((this.cgram[pixel] & 0x3e0) >> 5) * bMult) & 0xff;
+          b1 = (((this.cgram[pixel] & 0x7c00) >> 10) * bMult) & 0xff;
+          r2 = r1;
+          g2 = g1;
+          b2 = b1;
+        }
+        this.pixelOutput[line * 1536 + 6 * i] = r1;
+        this.pixelOutput[line * 1536 + 6 * i + 1] = g1;
+        this.pixelOutput[line * 1536 + 6 * i + 2] = b1;
+        this.pixelOutput[line * 1536 + 6 * i + 3] = r2;
+        this.pixelOutput[line * 1536 + 6 * i + 4] = g2;
+        this.pixelOutput[line * 1536 + 6 * i + 5] = b2;
+
+        i++;
       }
     }
   }
@@ -243,9 +285,70 @@ function Ppu(snes) {
 
   this.write = function(adr, value) {
     switch(adr) {
+      case 0x00: {
+        this.forcedBlank = (value & 0x80) > 0;
+        this.brightness = value & 0xf;
+        return;
+      }
+      case 0x01: {
+        this.sprAdr1 = (value & 0x7) << 13;
+        this.sprAdr2 = (value & 0x18);
+        this.objSize = (value & 0xe0) >> 5;
+        return;
+      }
+      case 0x02: {
+        this.oamAdr = value;
+        return;
+      }
+      case 0x03: {
+        this.oamInHigh = (value & 0x1) > 0;
+        this.objPriority = (value & 0x80) > 0;
+        return;
+      }
+      case 0x04: {
+        if(!this.oamSecond) {
+          if(this.oamInHigh) {
+            this.highOam[
+              this.oamAdr & 0xf
+            ] = (this.highOam[this.oamAdr & 0xf] & 0xff00) | value;
+          } else {
+            this.oamBuffer = (this.oamBuffer & 0xff00) | value;
+          }
+          this.oamSecond = true;
+        } else {
+          if(this.oamInHigh) {
+            this.highOam[
+              this.oamAdr & 0xf
+            ] = (this.highOam[this.oamAdr & 0xf] & 0xff) | (value << 8);
+          } else {
+            this.oamBuffer = (this.oamBuffer & 0xff) | (value << 8);
+            this.oam[this.oamAdr] = this.oamBuffer;
+          }
+          this.oamAdr++;
+          this.oamAdr &= 0xff;
+          this.oamInHigh = (
+            this.oamAdr === 0
+          ) ? !this.oamInHigh : this.oamInHigh;
+          this.oamSecond = false;
+        }
+        return;
+      }
       case 0x05: {
         this.mode = value & 0x7;
         this.layer3Prio = (value & 0x08) > 0;
+        this.bigTiles[0] = (value & 0x10) > 0;
+        this.bigTiles[1] = (value & 0x20) > 0;
+        this.bigTiles[2] = (value & 0x40) > 0;
+        this.bigTiles[3] = (value & 0x80) > 0;
+        return;
+      }
+      case 0x06: {
+        this.mosaicEnabled[0] = (value & 0x1) > 0;
+        this.mosaicEnabled[1] = (value & 0x2) > 0;
+        this.mosaicEnabled[2] = (value & 0x4) > 0;
+        this.mosaicEnabled[3] = (value & 0x8) > 0;
+        this.mosaicSize = (value & 0xf0) >> 4;
+        this.mosaicStartLine = this.snes.yPos;
         return;
       }
       case 0x07:
@@ -370,10 +473,9 @@ function Ppu(snes) {
       let x = i % 512;
       let y = (i >> 9) * 2;
       let ind = (y * 512 + x) * 4;
-      let p = this.pixelOutput[i];
-      let r = ((p & 0x1f) * 255 / 31) & 0xff;
-      let g = (((p & 0x3e0) >> 5) * 255 / 31) & 0xff;
-      let b = (((p & 0x7c00) >> 10) * 255 / 31) & 0xff;
+      let r = this.pixelOutput[i * 3];
+      let g = this.pixelOutput[i * 3 + 1];
+      let b = this.pixelOutput[i * 3 + 2];
       arr[ind] = r;
       arr[ind + 1] = g;
       arr[ind + 2] = b;
