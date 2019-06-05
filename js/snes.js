@@ -241,9 +241,11 @@ function Snes() {
     for(let i = 0; i < 16; i++) {
       let bit = this.joypad1Val & 0x1;
       this.joypad1Val >>= 1;
+      this.joypad1Val |= 0x8000;
       this.joypad1AutoRead |= (bit << (15 - i));
       bit = this.joypad2Val & 0x1;
       this.joypad2Val >>= 1;
+      this.joypad2Val |= 0x8000;
       this.joypad2AutoRead |= (bit << (15 - i));
     }
   }
@@ -628,11 +630,13 @@ function Snes() {
       if(adr === 0x4016) {
         let val = this.joypad1Val & 0x1;
         this.joypad1Val >>= 1;
+        this.joypad1Val |= 0x8000;
         return val;
       }
       if(adr === 0x4017) {
         let val = this.joypad2Val & 0x1;
         this.joypad2Val >>= 1;
+        this.joypad2Val |= 0x8000;
         return val;
       }
       if(adr >= 0x4200 && adr < 0x4400) {

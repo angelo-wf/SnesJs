@@ -158,13 +158,6 @@ function runFrame() {
 
 function update() {
   runFrame();
-  // TEMP: visualize sprites
-  ctx.fillStyle = "rgba(255, 0, 0, 0.5)";
-  for(let i = 0; i < 128; i++) {
-    let x = snes.ppu.oam[i * 2] & 0xff;
-    let y = (snes.ppu.oam[i * 2] & 0xff00) >> 8;
-    ctx.fillRect(x * 2, y * 2, 16, 16);
-  }
   loopId = requestAnimationFrame(update);
 }
 
