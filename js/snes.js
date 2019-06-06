@@ -169,8 +169,7 @@ function Snes() {
       this.ppu.renderLine(this.yPos);
     }
 
-    // TODO: handle 239-line mode
-    if(this.yPos === 225 && this.xPos === 0) {
+    if(this.yPos === (this.ppu.frameOverscan ? 240 : 225) && this.xPos === 0) {
       // start of vblank
       this.inNmi = true;
       this.inVblank = true;
@@ -560,18 +559,13 @@ function Snes() {
     if(adr > 0x33 && adr < 0x40) {
       return this.ppu.read(adr);
     }
-    switch(adr) {
-      case 0x40:
-      case 0x41:
-      case 0x42:
-      case 0x43: {
-        return this.apu.spcWritePorts[adr - 0x40];
-      }
-      case 0x80: {
-        let val = this.ram[this.ramAdr++];
-        this.ramAdr &= 0x1ffff;
-        return val;
-      }
+    if(adr >= 0x40 && adr < 0x80) {
+      return this.apu.spcWritePorts[adr & 0x3];
+    }
+    if(adr === 0x80) {
+      let val = this.ram[this.ramAdr++];
+      this.ramAdr &= 0x1ffff;
+      return val;
     }
     return 0; // rest not readable
   }
@@ -581,14 +575,11 @@ function Snes() {
       this.ppu.write(adr, value);
       return;
     }
+    if(adr >= 0x40 && adr < 0x80) {
+      this.apu.spcReadPorts[adr & 0x3] = value;
+      return;
+    }
     switch(adr) {
-      case 0x40:
-      case 0x41:
-      case 0x42:
-      case 0x43: {
-        this.apu.spcReadPorts[adr - 0x40] = value;
-        return;
-      }
       case 0x80: {
         this.ram[this.ramAdr++] = value;
         this.ramAdr &= 0x1ffff;
@@ -709,6 +700,19 @@ function Snes() {
         (header.speed << 4) | header.type
       ));
       return false;
+    }
+    if(rom.length < header.romSize) {
+      let extraData = rom.length - (header.romSize / 2);
+      // extend the rom to end up at the correct size
+      let nRom = new Uint8Array(header.romSize);
+      for(let i = 0; i < nRom.length; i++) {
+        if(i < (header.romSize / 2)) {
+          nRom[i] = rom[i];
+        } else {
+          nRom[i] = rom[(header.romSize / 2) + (i & (extraData - 1))];
+        }
+      }
+      rom = nRom;
     }
     this.cart = new Lorom(rom, header);
     return true;

@@ -3,8 +3,6 @@ let c = el("output");
 c.width = 512;
 c.height = 480;
 let ctx = c.getContext("2d");
-ctx.fillStyle = "#000000";
-ctx.fillRect(0, 0, 512, 480);
 let imgData = ctx.getImageData(0, 0, 512, 480);
 
 let loopId = 0;
@@ -138,16 +136,12 @@ function loadRom(rom) {
 function runFrame() {
 
   if(logging) {
-    let str = "";
-    let cyc = 0;
-    for(let i = 0; i < 100; i++) {
-      do {
-        snes.cycle();
-        cyc++;
-      } while(snes.cpuCyclesLeft > 0);
-      str += getTrace(snes.cpu, cyc) + "\n";
-    }
-    log(str);
+    do {
+      snes.cycle();
+    } while(snes.cpuCyclesLeft > 0);
+    log(getTrace(
+      snes.cpu, snes.frames * 1364 * 262 + snes.yPos * 1364 + snes.xPos
+    ));
   } else {
     snes.runFrame();
   }

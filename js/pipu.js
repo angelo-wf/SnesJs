@@ -134,6 +134,60 @@ function Ppu(snes) {
     this.rangeOver = false;
     this.timeOver = false;
 
+    this.mode7ExBg = false;
+    this.pseudoHires = false;
+    this.overscan = false;
+    this.objInterlace = false;
+    this.interlace = false;
+
+    this.frameOverscan = false;
+    this.frameInterlace = false;
+    this.evenFrame = false;
+
+    this.latchedHpos = 0;
+    this.latchedVpos = 0;
+    this.latchHsecond = false;
+    this.latchVsecond = false;
+    this.countersLatched = false;
+
+    this.mode7Hoff = 0;
+    this.mode7Voff = 0;
+    this.mode7A = 0;
+    this.mode7B = 0;
+    this.mode7C = 0;
+    this.mode7D = 0;
+    this.mode7X = 0;
+    this.mode7Y = 0;
+    this.mode7Prev = 0;
+    this.multResult = 0;
+
+    this.mode7LargeField = false;
+    this.mode7Char0fill = false;
+    this.mode7FlipX = false;
+    this.mode7FlipY = false;
+
+    this.window1Inversed = [false, false, false, false, false, false];
+    this.window1Enabled = [false, false, false, false, false, false];
+    this.window2Inversed = [false, false, false, false, false, false];
+    this.window2Enabled = [false, false, false, false, false, false];
+    this.windowMaskLogic = [0, 0, 0, 0, 0, 0];
+    this.window1Left = 0;
+    this.window1Right = 0;
+    this.window2Left = 0;
+    this.window2Right = 0;
+    this.mainScreenWindow = [false, false, false, false, false];
+    this.subScreenWindow = [false, false, false, false, false];
+
+    this.colorClip = 0;
+    this.preventMath = 0;
+    this.addSub = false;
+    this.directColor = false;
+
+    this.subtractColors = false;
+    this.halfColors = false;
+    this.mathEnabled = [false, false, false, false, false, false];
+    this.fixedColor = 0;
+
     this.tilemapBuffer = [0, 0, 0, 0];
     this.tileBufferP1 = [0, 0, 0, 0];
     this.tileBufferP2 = [0, 0, 0, 0];
@@ -145,14 +199,27 @@ function Ppu(snes) {
   this.reset();
 
   this.renderLine = function(line) {
-    if(line === 0 && !this.forcedBlank) {
+    if(line === 225 && this.overscan) {
+      this.frameOverscan = true;
+    }
+    if(line === 0) {
+      // pre-render line
       this.rangeOver = false;
       this.timeOver = false;
-      this.evaluateSprites(0);
-    } else if(line === 225 && !this.forcedBlank) {
-      this.oamAdr = this.oamRegAdr;
-      this.oamInHigh = this.oamRegInHigh;
-    } else if(line > 0 && line < 225) {
+      this.frameOverscan = false;
+      this.frameInterlace = false;
+      if(!this.forcedBlank) {
+        this.evaluateSprites(0);
+      }
+    } else if(line === (this.frameOverscan ? 240 : 225)) {
+      // beginning of Vblank
+      if(!this.forcedBlank) {
+        this.oamAdr = this.oamRegAdr;
+        this.oamInHigh = this.oamRegInHigh;
+      }
+      this.frameInterlace = this.interlace;
+      this.evenFrame = !this.evenFrame;
+    } else if(line > 0 && line < (this.frameOverscan ? 240 : 225)) {
       // visible line
       if(line === 1) {
         this.mosaicStartLine = 1;
@@ -392,8 +459,44 @@ function Ppu(snes) {
     return adr;
   }
 
+  this.get13Signed = function(val) {
+    if((val & 0x1000) > 0) {
+      return -(8192 - (val & 0xfff));
+    }
+    return (val & 0xfff);
+  }
+
+  this.getMultResult = function(a, b) {
+    a = ((a & 0x8000) > 0) ? -(65536 - a) : a;
+    b = ((b & 0x80) > 0) ? -(256 - b) : b;
+    let ans = a * b;
+    if(ans < 0) {
+      return 16777216 + ans;
+    }
+    return ans;
+  }
+
   this.read = function(adr) {
     switch(adr) {
+      case 0x34: {
+        return this.multResult & 0xff;
+      }
+      case 0x35: {
+        return (this.multResult & 0xff00) >> 8;
+      }
+      case 0x36: {
+        return (this.multResult & 0xff0000) >> 16;
+      }
+      case 0x37: {
+        // TODO: docs say this should only happen if bit 7 of the IO port
+        // is set, but always doing it makes Zelda 3 work
+        //if(this.snes.ppuLatch) {
+        this.latchedHpos = this.snes.xPos >> 2;
+        this.latchedVpos = this.snes.yPos;
+        //}
+        this.countersLatched = true;
+        return 0;
+      }
       case 0x38: {
         let val;
         if(!this.oamSecond) {
@@ -448,6 +551,43 @@ function Ppu(snes) {
         }
         return val;
       }
+      case 0x3c: {
+        let val;
+        if(!this.latchHsecond) {
+          val = this.latchedHpos & 0xff;
+          this.latchHsecond = true;
+        } else {
+          val = (this.latchedHpos & 0xff00) >> 8;
+          this.latchHsecond = false;
+        }
+        return val;
+      }
+      case 0x3d: {
+        let val;
+        if(!this.latchVsecond) {
+          val = this.latchedVpos & 0xff;
+          this.latchVsecond = true;
+        } else {
+          val = (this.latchedVpos & 0xff00) >> 8;
+          this.latchVsecond = false;
+        }
+        return val;
+      }
+      case 0x3e: {
+        let val = this.timeOver ? 0x80 : 0;
+        val |= this.rangeOver ? 0x40 : 0;
+        return val | 0x1;
+      }
+      case 0x3f: {
+        let val = this.evenFrame ? 0x80 : 0;
+        val |= this.countersLatched ? 0x40 : 0;
+        if(this.snes.ppuLatch) {
+          this.countersLatched = false;
+        }
+        this.latchHsecond = false;
+        this.latchVsecond = false;
+        return val | 0x2;
+      }
     }
     return 0;
   }
@@ -469,6 +609,7 @@ function Ppu(snes) {
         this.oamAdr = value;
         this.oamRegAdr = this.oamAdr;
         this.oamInHigh = this.oamRegInHigh;
+        this.oamSecond = false;
         return;
       }
       case 0x03: {
@@ -476,6 +617,7 @@ function Ppu(snes) {
         this.objPriority = (value & 0x80) > 0;
         this.oamAdr = this.oamRegAdr;
         this.oamRegInHigh = this.oamInHigh
+        this.oamSecond = false;
         return;
       }
       case 0x04: {
@@ -543,7 +685,11 @@ function Ppu(snes) {
         this.tileAdr[3] = (value & 0xf0) << 8;
         return;
       }
-      case 0x0d:
+      case 0x0d: {
+        this.mode7Hoff = (value << 8) | this.mode7Prev;
+        this.mode7Prev = value;
+        // fall through to also set normal layer bgHoff
+      }
       case 0x0f:
       case 0x11:
       case 0x13: {
@@ -554,7 +700,11 @@ function Ppu(snes) {
         this.offPrev2 = value;
         return;
       }
-      case 0x0e:
+      case 0x0e: {
+        this.mode7Voff = (value << 8) | this.mode7Prev;
+        this.mode7Prev = value;
+        // fall through to also set normal layer bgVoff
+      }
       case 0x10:
       case 0x12:
       case 0x14: {
@@ -605,8 +755,48 @@ function Ppu(snes) {
         }
         return;
       }
+      case 0x1a: {
+        this.mode7LargeField = (value & 0x80) > 0;
+        this.mode7Char0fill = (value & 0x40) > 0;
+        this.mode7FlipY = (value & 0x2) > 0;
+        this.mode7FlipX = (value & 0x1) > 0;
+        return;
+      }
+      case 0x1b: {
+        this.mode7A = (value << 8) | this.mode7Prev;
+        this.mode7Prev = value;
+        this.multResult = this.getMultResult(this.mode7A, this.mode7B >> 8);
+        return;
+      }
+      case 0x1c: {
+        this.mode7B = (value << 8) | this.mode7Prev;
+        this.mode7Prev = value;
+        this.multResult = this.getMultResult(this.mode7A, this.mode7B >> 8);
+        return;
+      }
+      case 0x1d: {
+        this.mode7C = (value << 8) | this.mode7Prev;
+        this.mode7Prev = value;
+        return;
+      }
+      case 0x1e: {
+        this.mode7D = (value << 8) | this.mode7Prev;
+        this.mode7Prev = value;
+        return;
+      }
+      case 0x1f: {
+        this.mode7X = (value << 8) | this.mode7Prev;
+        this.mode7Prev = value;
+        return;
+      }
+      case 0x20: {
+        this.mode7Y = (value << 8) | this.mode7Prev;
+        this.mode7Prev = value;
+        return;
+      }
       case 0x21: {
         this.cgramAdr = value;
+        this.cgramSecond = false;
         return;
       }
       case 0x22: {
@@ -619,6 +809,67 @@ function Ppu(snes) {
           this.cgramAdr &= 0xff;
           this.cgramSecond = false;
         }
+        return;
+      }
+      case 0x23: {
+        this.window1Inversed[0] = (value & 0x01) > 0;
+        this.window1Enabled[0] = (value & 0x02) > 0;
+        this.window2Inversed[0] = (value & 0x04) > 0;
+        this.window2Enabled[0] = (value & 0x08) > 0;
+        this.window1Inversed[1] = (value & 0x10) > 0;
+        this.window1Enabled[1] = (value & 0x20) > 0;
+        this.window2Inversed[1] = (value & 0x40) > 0;
+        this.window2Enabled[1] = (value & 0x80) > 0;
+        return;
+      }
+      case 0x24: {
+        this.window1Inversed[2] = (value & 0x01) > 0;
+        this.window1Enabled[2] = (value & 0x02) > 0;
+        this.window2Inversed[2] = (value & 0x04) > 0;
+        this.window2Enabled[2] = (value & 0x08) > 0;
+        this.window1Inversed[3] = (value & 0x10) > 0;
+        this.window1Enabled[3] = (value & 0x20) > 0;
+        this.window2Inversed[3] = (value & 0x40) > 0;
+        this.window2Enabled[3] = (value & 0x80) > 0;
+        return;
+      }
+      case 0x25: {
+        this.window1Inversed[4] = (value & 0x01) > 0;
+        this.window1Enabled[4] = (value & 0x02) > 0;
+        this.window2Inversed[4] = (value & 0x04) > 0;
+        this.window2Enabled[4] = (value & 0x08) > 0;
+        this.window1Inversed[5] = (value & 0x10) > 0;
+        this.window1Enabled[5] = (value & 0x20) > 0;
+        this.window2Inversed[5] = (value & 0x40) > 0;
+        this.window2Enabled[5] = (value & 0x80) > 0;
+        return;
+      }
+      case 0x26: {
+        this.window1Left = value;
+        return;
+      }
+      case 0x27: {
+        this.window1Right = value;
+        return;
+      }
+      case 0x28: {
+        this.window2Left = value;
+        return;
+      }
+      case 0x29: {
+        this.window2Right = value;
+        return;
+      }
+      case 0x2a: {
+        this.windowMaskLogic[0] = value & 0x3;
+        this.windowMaskLogic[1] = (value & 0xc) >> 2;
+        this.windowMaskLogic[2] = (value & 0x30) >> 4;
+        this.windowMaskLogic[3] = (value & 0xc0) >> 6;
+        return;
+      }
+      case 0x2b: {
+        this.windowMaskLogic[4] = value & 0x3;
+        this.windowMaskLogic[5] = (value & 0xc) >> 2;
         return;
       }
       case 0x2c: {
@@ -637,25 +888,99 @@ function Ppu(snes) {
         this.subScreenEnabled[4] = (value & 0x10) > 0;
         return;
       }
+      case 0x2e: {
+        this.mainScreenWindow[0] = (value & 0x1) > 0;
+        this.mainScreenWindow[1] = (value & 0x2) > 0;
+        this.mainScreenWindow[2] = (value & 0x4) > 0;
+        this.mainScreenWindow[3] = (value & 0x8) > 0;
+        this.mainScreenWindow[4] = (value & 0x10) > 0;
+        return;
+      }
+      case 0x2f: {
+        this.subScreenWindow[0] = (value & 0x1) > 0;
+        this.subScreenWindow[1] = (value & 0x2) > 0;
+        this.subScreenWindow[2] = (value & 0x4) > 0;
+        this.subScreenWindow[3] = (value & 0x8) > 0;
+        this.subScreenWindow[4] = (value & 0x10) > 0;
+        return;
+      }
+      case 0x30: {
+        this.colorClip = (value & 0xc0) >> 6;
+        this.preventMath = (value & 0x30) >> 4;
+        this.addSub = (value & 0x2) > 0;
+        this.directColor = (value & 0x1) > 0;
+        return;
+      }
+      case 0x31: {
+        this.subtractColors = (value & 0x80) > 0;
+        this.halfColors = (value & 0x40) > 0;
+        this.mathEnabled[0] = (value & 0x1) > 0;
+        this.mathEnabled[1] = (value & 0x2) > 0;
+        this.mathEnabled[2] = (value & 0x4) > 0;
+        this.mathEnabled[3] = (value & 0x8) > 0;
+        this.mathEnabled[4] = (value & 0x10) > 0;
+        this.mathEnabled[5] = (value & 0x20) > 0;
+        return;
+      }
+      case 0x32: {
+        if((value & 0x80) > 0) {
+          this.fixedColor = (this.fixedColor & 0x3ff) | ((value & 0x1f) << 10);
+        }
+        if((value & 0x40) > 0) {
+          this.fixedColor = (this.fixedColor & 0x7c1f) | ((value & 0x1f) << 5);
+        }
+        if((value & 0x20) > 0) {
+          this.fixedColor = (this.fixedColor & 0x7fe0) | (value & 0x1f);
+        }
+        return;
+      }
+      case 0x33: {
+        this.mode7ExBg = (value & 0x40) > 0;
+        this.pseudoHires = (value & 0x08) > 0;
+        this.overscan = (value & 0x04) > 0;
+        this.objInterlace = (value & 0x02) > 0;
+        this.interlace = (value & 0x01) > 0;
+        return;
+      }
     }
   }
 
   this.setPixels = function(arr) {
 
-    for(let i = 0; i < 512*240; i++) {
+    if(!this.frameOverscan) {
+      // clear the top 8 and bottom 8 lines to transarent
+      for(let i = 0; i < 512*16; i++) {
+        let x = i % 512;
+        let y = (i >> 9);
+        let ind = (y * 512 + x) * 4;
+        arr[ind + 3] = 0;
+      }
+      for(let i = 0; i < 512*16; i++) {
+        let x = i % 512;
+        let y = (i >> 9);
+        let ind = ((y + 464) * 512 + x) * 4;
+        arr[ind + 3] = 0;
+      }
+    }
+
+    let addY = this.frameOverscan ? 0 : 14;
+
+    for(let i = 512; i < 512 * (this.frameOverscan ? 240 : 225); i++) {
       let x = i % 512;
       let y = (i >> 9) * 2;
-      let ind = (y * 512 + x) * 4;
+      let ind = ((y + addY) * 512 + x) * 4;
       let r = this.pixelOutput[i * 3];
       let g = this.pixelOutput[i * 3 + 1];
       let b = this.pixelOutput[i * 3 + 2];
       arr[ind] = r;
       arr[ind + 1] = g;
       arr[ind + 2] = b;
+      arr[ind + 3] = 255;
       ind += 512 * 4;
       arr[ind] = r;
       arr[ind + 1] = g;
       arr[ind + 2] = b;
+      arr[ind + 3] = 255;
     }
   }
 
