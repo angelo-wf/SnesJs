@@ -204,8 +204,8 @@ function Ppu(snes) {
   }
   this.reset();
 
-  // TODO: 16*16 tiles, mode 2/4/6 offset-per-tile, mode7 ExBG, direct-color,
-  // mode 5/6 horizontal hires, pseudo-hires, interlace mode, windows,
+  // TODO: mode 2/4/6 offset-per-tile, mode7 ExBG, mode 5/6 horizontal hires,
+  // pseudo-hires, interlace mode (+logic for sprites, mode 5/6), windows,
   // color math, color window
 
   this.renderLine = function(line) {
@@ -256,10 +256,12 @@ function Ppu(snes) {
         if(!this.forcedBlank) {
 
           let pixel = 0;
-          for(let j = 0; j < count; j++) {
+          let layer = 5;
+          let j;
+          for(j = 0; j < count; j++) {
             let x = i
             let y = line;
-            let layer = this.layersPerMode[modeIndex + j];
+            layer = this.layersPerMode[modeIndex + j];
             if(this.mainScreenEnabled[layer] || this.subScreenEnabled[layer]) {
               if(this.mosaicEnabled[layer]) {
                 x -= x % this.mosaicSize;
@@ -277,9 +279,20 @@ function Ppu(snes) {
               break;
             }
           }
-          r1 = ((this.cgram[pixel] & 0x1f) * bMult) & 0xff;
-          g1 = (((this.cgram[pixel] & 0x3e0) >> 5) * bMult) & 0xff;
-          b1 = (((this.cgram[pixel] & 0x7c00) >> 10) * bMult) & 0xff;
+          layer = j === count ? 5 : layer;
+          let color = this.cgram[pixel & 0xff];
+          if(
+            this.directColor && layer < 4 &&
+            this.bitPerMode[this.mode * 4 + layer] === 8
+          ) {
+            let r = ((pixel & 0x7) << 2) | ((pixel & 0x100) >> 7);
+            let g = ((pixel & 0x38) >> 1) | ((pixel & 0x200) >> 8);
+            let b = ((pixel & 0xc0) >> 3) | ((pixel & 0x400) >> 8);
+            color = (b << 10) | (g << 5) | r;
+          }
+          r1 = ((color & 0x1f) * bMult) & 0xff;
+          g1 = (((color & 0x3e0) >> 5) * bMult) & 0xff;
+          b1 = (((color & 0x7c00) >> 10) * bMult) & 0xff;
           r2 = r1;
           g2 = g1;
           b2 = b1;
@@ -313,12 +326,12 @@ function Ppu(snes) {
     }
 
     if(
-      x >> 3 !== this.lastTileFetchedX[l] ||
-      y >> 3 !== this.lastTileFetchedY[l]
+      (x >> 3) !== this.lastTileFetchedX[l] ||
+      (y >> 3) !== this.lastTileFetchedY[l]
     ) {
       this.fetchTileInBuffer(x, y, l);
-      this.lastTileFetchedX[l] = x >> 3;
-      this.lastTileFetchedY[l] = y >> 3;
+      this.lastTileFetchedX[l] = (x >> 3);
+      this.lastTileFetchedY[l] = (y >> 3);
     }
 
     let mapWord = this.tilemapBuffer[l];
@@ -350,12 +363,16 @@ function Ppu(snes) {
       tileData |= ((this.tileBufferP4[l] >> (8 + xShift)) & 0x1) << 7;
     }
 
-    return tileData > 0 ? (
-      paletteNum * mul + tileData
-    ) & 0xff : 0;
+    return tileData > 0 ? (paletteNum * mul + tileData) : 0;
   }
 
   this.fetchTileInBuffer = function(x, y, l) {
+    let rx = x;
+    let ry = y;
+    let useXbig = this.bigTiles[l] | this.mode === 5 | this.mode === 6;
+    x >>= useXbig ? 1 : 0;
+    y >>= this.bigTiles[l] ? 1 : 0;
+
     let adr = this.tilemapAdr[l] + (
       ((y & 0xff) >> 3) << 5 | ((x & 0xff) >> 3)
     );
@@ -364,8 +381,14 @@ function Ppu(snes) {
       this.tilemapWider[l] ? 2048 : 1024
     ) : 0;
     this.tilemapBuffer[l] = this.vram[adr & 0x7fff];
-    let yRow = (this.tilemapBuffer[l] & 0x8000) > 0 ? 7 - (y & 0x7) : (y & 0x7);
+    let yFlip = (this.tilemapBuffer[l] & 0x8000) > 0;
+    let xFlip = (this.tilemapBuffer[l] & 0x4000) > 0;
+    let yRow = yFlip ? 7 - (ry & 0x7) : (ry & 0x7);
     let tileNum = this.tilemapBuffer[l] & 0x3ff;
+
+    tileNum += useXbig && (rx & 0x8) === (xFlip ? 0 : 8) ? 1 : 0;
+    tileNum += this.bigTiles[l] && (ry & 0x8) === (yFlip ? 0 : 8) ? 0x10 : 0;
+
     let bits = this.bitPerMode[this.mode * 4 + l];
 
     this.tileBufferP1[l] = this.vram[
