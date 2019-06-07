@@ -13,6 +13,9 @@ function Ppu(snes) {
   this.spriteLineBuffer = new Uint8Array(256);
   this.spritePrioBuffer = new Uint8Array(256);
 
+  this.mode7Xcoords = new Int32Array(256);
+  this.mode7Ycoords = new Int32Array(256);
+
   this.pixelOutput = new Uint16Array(512*3*240);
 
   this.layersPerMode = [
@@ -84,6 +87,9 @@ function Ppu(snes) {
     clearArray(this.spritePrioBuffer);
 
     clearArray(this.pixelOutput);
+
+    clearArray(this.mode7Xcoords);
+    clearArray(this.mode7Ycoords);
 
     this.cgramAdr = 0;
     this.cgramSecond = false;
@@ -224,6 +230,9 @@ function Ppu(snes) {
       if(line === 1) {
         this.mosaicStartLine = 1;
       }
+      if(this.mode === 7) {
+        this.generateMode7Coords(line);
+      }
       this.lastTileFetchedX = [-1, -1, -1, -1];
       this.lastTileFetchedY = [-1, -1, -1, -1];
       let modeIndex = this.layer3Prio && this.mode === 1 ? 96 : 12 * this.mode;
@@ -252,8 +261,8 @@ function Ppu(snes) {
                 x -= x % this.mosaicSize;
                 y -= (y - this.mosaicStartLine) % this.mosaicSize;
               }
-              x += this.bgHoff[layer];
-              y += this.bgVoff[layer];
+              x += this.mode === 7 ? 0 : this.bgHoff[layer];
+              y += this.mode === 7 ? 0 : this.bgVoff[layer];
               pixel = this.getPixelForLayer(
                 x, y,
                 layer,
@@ -293,6 +302,10 @@ function Ppu(snes) {
         return 0;
       }
       return this.spriteLineBuffer[x];
+    }
+
+    if(this.mode === 7) {
+      return this.getMode7Pixel(x, y);
     }
 
     if(
@@ -447,6 +460,51 @@ function Ppu(snes) {
     }
   }
 
+  this.generateMode7Coords = function(y) {
+    let rY = this.mode7FlipY ? 255 - y : y;
+
+    let clippedH = this.mode7Hoff - this.mode7X;
+    clippedH = (clippedH & 0x2000) > 0 ? (clippedH | ~0x3ff) : (clippedH & 0x3ff);
+    let clippedV = this.mode7Voff - this.mode7Y;
+    clippedV = (clippedV & 0x2000) > 0 ? (clippedV | ~0x3ff) : (clippedV & 0x3ff);
+
+    let lineStartX = (
+      ((this.mode7A * clippedH) & ~63) +
+      ((this.mode7B * rY) & ~63) + ((this.mode7B * clippedV) & ~63) +
+      (this.mode7X << 8)
+    );
+    let lineStartY = (
+      ((this.mode7C * clippedH) & ~63) +
+      ((this.mode7D * rY) & ~63) + ((this.mode7D * clippedV) & ~63) +
+      (this.mode7Y << 8)
+    );
+
+    this.mode7Xcoords[0] = lineStartX;
+    this.mode7Ycoords[0] = lineStartY;
+
+    for(let i = 1; i < 256; i++) {
+      this.mode7Xcoords[i] = this.mode7Xcoords[i - 1] + this.mode7A;
+      this.mode7Ycoords[i] = this.mode7Ycoords[i - 1] + this.mode7C;
+    }
+  }
+
+  this.getMode7Pixel = function(x, y) {
+    let rX = this.mode7FlipX ? 255 - x : x;
+
+    let px = this.mode7Xcoords[rX] >> 8;
+    let py = this.mode7Ycoords[rX] >> 8;
+
+    // fetch the right tilemap byte
+    let tileX = (px & 0x3f8) >> 3;
+    let tileY = (py & 0x3f8) >> 3;
+    let tileByte = this.vram[(tileY * 128 + tileX)] & 0xff;
+    // fetch the tile
+    let pixelData = this.vram[tileByte * 64 + (py & 0x7) * 8 + (px & 0x7)];
+    pixelData >>= 8;
+
+    return pixelData;
+  }
+
   this.getVramRemap = function() {
     let adr = this.vramAdr & 0x7fff;
     if(this.vramRemap === 1) {
@@ -466,8 +524,16 @@ function Ppu(snes) {
     return (val & 0xfff);
   }
 
+  this.get16Signed = function(val) {
+    if((val & 0x8000) > 0) {
+      return -(65536 - val);
+    }
+    return val;
+  }
+
   this.getMultResult = function(a, b) {
-    a = ((a & 0x8000) > 0) ? -(65536 - a) : a;
+    b = b < 0 ? 65536 + b : b;
+    b >>= 8;
     b = ((b & 0x80) > 0) ? -(256 - b) : b;
     let ans = a * b;
     if(ans < 0) {
@@ -686,7 +752,7 @@ function Ppu(snes) {
         return;
       }
       case 0x0d: {
-        this.mode7Hoff = (value << 8) | this.mode7Prev;
+        this.mode7Hoff = this.get13Signed((value << 8) | this.mode7Prev);
         this.mode7Prev = value;
         // fall through to also set normal layer bgHoff
       }
@@ -701,7 +767,7 @@ function Ppu(snes) {
         return;
       }
       case 0x0e: {
-        this.mode7Voff = (value << 8) | this.mode7Prev;
+        this.mode7Voff = this.get13Signed((value << 8) | this.mode7Prev);
         this.mode7Prev = value;
         // fall through to also set normal layer bgVoff
       }
@@ -763,34 +829,34 @@ function Ppu(snes) {
         return;
       }
       case 0x1b: {
-        this.mode7A = (value << 8) | this.mode7Prev;
+        this.mode7A = this.get16Signed((value << 8) | this.mode7Prev);
         this.mode7Prev = value;
-        this.multResult = this.getMultResult(this.mode7A, this.mode7B >> 8);
+        this.multResult = this.getMultResult(this.mode7A, this.mode7B);
         return;
       }
       case 0x1c: {
-        this.mode7B = (value << 8) | this.mode7Prev;
+        this.mode7B = this.get16Signed((value << 8) | this.mode7Prev);
         this.mode7Prev = value;
-        this.multResult = this.getMultResult(this.mode7A, this.mode7B >> 8);
+        this.multResult = this.getMultResult(this.mode7A, this.mode7B);
         return;
       }
       case 0x1d: {
-        this.mode7C = (value << 8) | this.mode7Prev;
+        this.mode7C = this.get16Signed((value << 8) | this.mode7Prev);
         this.mode7Prev = value;
         return;
       }
       case 0x1e: {
-        this.mode7D = (value << 8) | this.mode7Prev;
+        this.mode7D = this.get16Signed((value << 8) | this.mode7Prev);
         this.mode7Prev = value;
         return;
       }
       case 0x1f: {
-        this.mode7X = (value << 8) | this.mode7Prev;
+        this.mode7X = this.get13Signed((value << 8) | this.mode7Prev);
         this.mode7Prev = value;
         return;
       }
       case 0x20: {
-        this.mode7Y = (value << 8) | this.mode7Prev;
+        this.mode7Y = this.get13Signed((value << 8) | this.mode7Prev);
         this.mode7Prev = value;
         return;
       }
