@@ -144,6 +144,13 @@ function runFrame() {
     ));
   } else {
     snes.runFrame();
+    // do {
+    //   snes.cycle();
+    //   if(snes.cpu.br[4] === 0x94a6) {
+    //     logging = true;
+    //     break;
+    //   }
+    // } while(!(snes.xPos === 0 && snes.yPos === 0));
   }
 
   snes.setPixels(imgData.data);

@@ -116,7 +116,7 @@ function Ppu(snes) {
     this.bigTiles = [false, false, false, false];
 
     this.mosaicEnabled = [false, false, false, false, false];
-    this.mosaicSize = 0;
+    this.mosaicSize = 1;
     this.mosaicStartLine = 1;
 
     this.mainScreenEnabled = [false, false, false, false, false];
@@ -204,6 +204,10 @@ function Ppu(snes) {
   }
   this.reset();
 
+  // TODO: 16*16 tiles, mode 2/4/6 offset-per-tile, mode7 ExBG, direct-color,
+  // mode 5/6 horizontal hires, pseudo-hires, interlace mode, windows,
+  // color math, color window
+
   this.renderLine = function(line) {
     if(line === 225 && this.overscan) {
       this.frameOverscan = true;
@@ -257,7 +261,7 @@ function Ppu(snes) {
             let y = line;
             let layer = this.layersPerMode[modeIndex + j];
             if(this.mainScreenEnabled[layer] || this.subScreenEnabled[layer]) {
-              if(this.mosaicEnabled[layer] && this.mosaicSize > 0) {
+              if(this.mosaicEnabled[layer]) {
                 x -= x % this.mosaicSize;
                 y -= (y - this.mosaicStartLine) % this.mosaicSize;
               }

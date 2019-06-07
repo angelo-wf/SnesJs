@@ -627,25 +627,56 @@ Cpu = (function() {
     }
 
     this.adc = function(adr, adrh) {
-      // TODO: decimal mode
       if(this.m) {
         let value = this.mem.read(adr);
-        let result = (this.br[A] & 0xff) + value + (this.c ? 1 : 0);
+        let result;
+        if(this.d) {
+          result = (this.br[A] & 0xf) + (value & 0xf) + (this.c ? 1 : 0);
+          result += result > 9 ? 6 : 0;
+          result = (
+            (this.br[A] & 0xf0) + (value & 0xf0) +
+            (result > 0xf ? 0x10 : 0) + (result & 0xf)
+          );
+        } else {
+          result = (this.br[A] & 0xff) + value + (this.c ? 1 : 0);
+        }
         this.v = (
           (this.br[A] & 0x80) === (value & 0x80) &&
           (value & 0x80) !== (result & 0x80)
         )
+        result += (this.d && result > 0x9f) ? 0x60 : 0;
         this.c = result > 0xff;
         this.setZandN(result, this.m);
         this.br[A] = (this.br[A] & 0xff00) | (result & 0xff);
       } else {
         let value = this.readWord(adr, adrh);
         this.cyclesLeft++; // 1 extra cycle if m = 0
-        let result = this.br[A] + value + (this.c ? 1 : 0);
+        let result;
+        if(this.d) {
+          result = (this.br[A] & 0xf) + (value & 0xf) + (this.c ? 1 : 0);
+          result += result > 9 ? 6 : 0;
+          result = (
+            (this.br[A] & 0xf0) + (value & 0xf0) +
+            (result > 0xf ? 0x10 : 0) + (result & 0xf)
+          );
+          result += result > 0x9f ? 0x60 : 0;
+          result = (
+            (this.br[A] & 0xf00) + (value & 0xf00) +
+            (result > 0xff ? 0x100 : 0) + (result & 0xff)
+          );
+          result += result > 0x9ff ? 0x600 : 0;
+          result = (
+            (this.br[A] & 0xf000) + (value & 0xf000) +
+            (result > 0xfff ? 0x1000 : 0) + (result & 0xfff)
+          );
+        } else {
+          result = this.br[A] + value + (this.c ? 1 : 0);
+        }
         this.v = (
           (this.br[A] & 0x8000) === (value & 0x8000) &&
           (value & 0x8000) !== (result & 0x8000)
         )
+        result += (this.d && result > 0x9fff) ? 0x6000 : 0;
         this.c = result > 0xffff;
         this.setZandN(result, this.m);
         this.br[A] = result;
@@ -653,25 +684,56 @@ Cpu = (function() {
     }
 
     this.sbc = function(adr, adrh) {
-      // TODO: decimal mode
       if(this.m) {
         let value = this.mem.read(adr) ^ 0xff;
-        let result = (this.br[A] & 0xff) + value + (this.c ? 1 : 0);
+        let result;
+        if(this.d) {
+          result = (this.br[A] & 0xf) + (value & 0xf) + (this.c ? 1 : 0);
+          result -= result <= 0xf ? 6 : 0;
+          result = (
+            (this.br[A] & 0xf0) + (value & 0xf0) +
+            (result > 0xf ? 0x10 : 0) + (result & 0xf)
+          );
+        } else {
+          result = (this.br[A] & 0xff) + value + (this.c ? 1 : 0);
+        }
         this.v = (
           (this.br[A] & 0x80) === (value & 0x80) &&
           (value & 0x80) !== (result & 0x80)
         )
+        result -= (this.d && result <= 0xff) ? 0x60 : 0;
         this.c = result > 0xff;
         this.setZandN(result, this.m);
         this.br[A] = (this.br[A] & 0xff00) | (result & 0xff);
       } else {
         let value = this.readWord(adr, adrh) ^ 0xffff;
         this.cyclesLeft++; // 1 extra cycle if m = 0
-        let result = this.br[A] + value + (this.c ? 1 : 0);
+        let result;
+        if(this.d) {
+          result = (this.br[A] & 0xf) + (value & 0xf) + (this.c ? 1 : 0);
+          result -= result <= 0x0f ? 6 : 0;
+          result = (
+            (this.br[A] & 0xf0) + (value & 0xf0) +
+            (result > 0xf ? 0x10 : 0) + (result & 0xf)
+          );
+          result -= result <= 0xff ? 0x60 : 0;
+          result = (
+            (this.br[A] & 0xf00) + (value & 0xf00) +
+            (result > 0xff ? 0x100 : 0) + (result & 0xff)
+          );
+          result -= result <= 0xfff ? 0x600 : 0;
+          result = (
+            (this.br[A] & 0xf000) + (value & 0xf000) +
+            (result > 0xfff ? 0x1000 : 0) + (result & 0xfff)
+          );
+        } else {
+          result = this.br[A] + value + (this.c ? 1 : 0);
+        }
         this.v = (
           (this.br[A] & 0x8000) === (value & 0x8000) &&
           (value & 0x8000) !== (result & 0x8000)
         )
+        result -= (this.d && result <= 0xffff) ? 0x6000 : 0;
         this.c = result > 0xffff;
         this.setZandN(result, this.m);
         this.br[A] = result;
@@ -1472,11 +1534,11 @@ Cpu = (function() {
 
     this.tsx = function(adr, adrh) {
       if(this.x) {
-        this.br[Y] = this.br[SP] & 0xff;
-        this.setZandN(this.br[Y], this.x);
+        this.br[X] = this.br[SP] & 0xff;
+        this.setZandN(this.br[X], this.x);
       } else {
-        this.br[Y] = this.br[SP];
-        this.setZandN(this.br[Y], this.x);
+        this.br[X] = this.br[SP];
+        this.setZandN(this.br[X], this.x);
       }
     }
 
@@ -1554,6 +1616,14 @@ Cpu = (function() {
       let temp = this.c;
       this.c = this.e;
       this.e = temp;
+      if(this.e) {
+        this.m = true;
+        this.x = true;
+      }
+      if(this.x) {
+        this.br[X] &= 0xff;
+        this.br[Y] &= 0xff;
+      }
     }
 
     // function table

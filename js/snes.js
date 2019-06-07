@@ -113,6 +113,8 @@ function Snes() {
     ];
     this.dmaOffIndex = 0;
 
+    this.openBus = 0;
+
   }
   this.reset();
 
@@ -400,18 +402,18 @@ function Snes() {
 
   // read and write handlers
 
-  // TODO: open bus
-
   this.readReg = function(adr) {
     switch(adr) {
       case 0x4210: {
         let val = 0x1;
         val |= this.inNmi ? 0x80 : 0;
+        val |= this.openBus & 0x70;
         this.inNmi = false;
         return val;
       }
       case 0x4211: {
         let val = this.inIrq ? 0x80 : 0;
+        val |= this.openBus & 0x7f;
         this.inIrq = false;
         this.cpu.irqWanted = false;
         return val;
@@ -420,6 +422,7 @@ function Snes() {
         let val = this.autoJoyBusy ? 0x1 : 0;
         val |= this.inHblank ? 0x40 : 0;
         val |= this.inVblank ? 0x80 : 0;
+        val |= this.openBus & 0x3e;
         return val;
       }
       case 0x4213: {
@@ -503,7 +506,7 @@ function Snes() {
       }
     }
 
-    return 0;
+    return this.openBus;
   }
 
   this.writeReg = function(adr, value) {
@@ -517,6 +520,11 @@ function Snes() {
       }
       case 0x4201: {
         // IO port
+        if(this.ppuLatch && (value & 0x80) === 0) {
+          this.ppu.latchedHpos = this.xPos >> 2;
+          this.ppu.latchedVpos = this.yPos;
+          this.ppu.countersLatched = true;
+        }
         this.ppuLatch = (value & 0x80) > 0;
         return;
       }
@@ -664,7 +672,7 @@ function Snes() {
       this.ramAdr &= 0x1ffff;
       return val;
     }
-    return 0; // rest not readable
+    return this.openBus; // rest not readable
   }
 
   this.writeBBus = function(adr, value) {
@@ -698,7 +706,7 @@ function Snes() {
     return;
   }
 
-  this.read = function(adr) {
+  this.rread = function(adr) {
     adr &= 0xffffff;
     let bank = adr >> 16;
     adr &= 0xffff;
@@ -731,12 +739,19 @@ function Snes() {
         return this.readReg(adr);
       }
 
-      return 0; // not readable
+      return this.openBus; // not readable
     }
     return this.cart.read(bank, adr);
   }
 
+  this.read = function(adr) {
+    let val = this.rread(adr);
+    this.openBus = val;
+    return val;
+  }
+
   this.write = function(adr, value) {
+    this.openBus = value;
     adr &= 0xffffff;
     //log("Written $" + getByteRep(value) + " to $" + getLongRep(adr));
     let bank = adr >> 16;
