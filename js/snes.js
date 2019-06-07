@@ -161,7 +161,7 @@ function Snes() {
       // start of hblank
       this.inHblank = true;
       if(!this.inVblank) {
-        // this.handleHdma();
+        this.handleHdma();
       }
     } else if(this.xPos === 0) {
       // end of hblank
@@ -185,7 +185,7 @@ function Snes() {
       // end of vblank
       this.inNmi = false;
       this.inVblank = false;
-      // this.initHdma();
+      this.initHdma();
     }
 
     if(this.autoJoyBusy) {
@@ -298,6 +298,103 @@ function Snes() {
       this.dmaOffIndex = 0;
       this.dmaActive[i] = false;
       this.dmaTimer += 8; // 8 extra cycles overhead per channel
+    }
+  }
+
+  this.initHdma = function() {
+    this.hdmaTimer = 18;
+    for(let i = 0; i < 8; i++) {
+      if(this.hdmaActive[i]) {
+        // terminate DMA if it was busy for this channel
+        this.dmaActive[i] = false;
+
+        this.hdmaTableAdr[i] = this.dmaAadr[i];
+        this.hdmaRepCount[i] = this.read(
+          (this.dmaAadrBank[i] << 16) | this.hdmaTableAdr[i]++
+        );
+        this.hdmaTimer += 8;
+        if(this.hdmaInd[i]) {
+          this.dmaSize[i] = this.read(
+            (this.dmaAadrBank[i] << 16) | this.hdmaTableAdr[i]++
+          );
+          this.dmaSize[i] |= this.read(
+            (this.dmaAadrBank[i] << 16) | this.hdmaTableAdr[i]++
+          ) << 8;
+          this.hdmaTimer += 16;
+        }
+        this.hdmaDoTransfer[i] = true;
+      } else {
+        this.hdmaDoTransfer[i] = false;
+      }
+      this.hdmaTerminated[i] = false;
+    }
+  }
+
+  this.handleHdma = function() {
+    this.hdmaTimer = 18;
+    for(let i = 0; i < 8; i++) {
+      if(this.hdmaActive[i] && !this.hdmaTerminated[i]) {
+        // terminate dma if it is busy on this channel
+        this.dmaActive[i] = false;
+        this.hdmaTimer += 8;
+        if(this.hdmaDoTransfer[i]) {
+          for(let j = 0; j < this.dmaOffLengths[this.dmaMode[i]]; j++) {
+            let tableOff = this.dmaMode[i] * 4 + j;
+            this.hdmaTimer += 8;
+            if(this.hdmaInd[i]) {
+              if(this.dmaFromB[i]) {
+                this.write(
+                  (this.hdmaIndBank[i] << 16) | this.dmaSize[i],
+                  this.readBBus(
+                    (this.dmaBadr[i] + this.dmaOffs[tableOff]) & 0xff
+                  )
+                );
+              } else {
+                this.writeBBus(
+                  (this.dmaBadr[i] + this.dmaOffs[tableOff]) & 0xff,
+                  this.read((this.hdmaIndBank[i] << 16) | this.dmaSize[i])
+                );
+              }
+              this.dmaSize[i]++
+            } else {
+              if(this.dmaFromB[i]) {
+                this.write(
+                  (this.dmaAadrBank[i] << 16) | this.hdmaTableAdr[i],
+                  this.readBBus(
+                    (this.dmaBadr[i] + this.dmaOffs[tableOff]) & 0xff
+                  )
+                );
+              } else {
+                this.writeBBus(
+                  (this.dmaBadr[i] + this.dmaOffs[tableOff]) & 0xff,
+                  this.read((this.dmaAadrBank[i] << 16) | this.hdmaTableAdr[i])
+                );
+              }
+              this.hdmaTableAdr[i]++;
+            }
+          }
+        }
+        this.hdmaRepCount[i]--;
+        this.hdmaDoTransfer[i] = (this.hdmaRepCount[i] & 0x80) > 0;
+        if((this.hdmaRepCount[i] & 0x7f) === 0) {
+          this.hdmaRepCount[i] = this.read(
+            (this.dmaAadrBank[i] << 16) | this.hdmaTableAdr[i]++
+          );
+          if(this.hdmaInd[i]) {
+            this.dmaSize[i] = this.read(
+              (this.dmaAadrBank[i] << 16) | this.hdmaTableAdr[i]++
+            );
+            this.dmaSize[i] |= this.read(
+              (this.dmaAadrBank[i] << 16) | this.hdmaTableAdr[i]++
+            ) << 8;
+            this.hdmaTimer += 16;
+          }
+          if(this.hdmaRepCount[i] === 0) {
+            this.hdmaTerminated[i] = true;
+          }
+          this.hdmaDoTransfer[i] = true;
+        }
+      }
     }
   }
 

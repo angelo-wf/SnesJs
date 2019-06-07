@@ -325,6 +325,8 @@ function Ppu(snes) {
     let paletteNum = (mapWord & 0x1c00) >> 10;
     let xShift = (mapWord & 0x4000) > 0 ? (x & 0x7) : 7 - (x & 0x7);
 
+    paletteNum += this.mode === 0 ? l * 8 : 0;
+
     let bits = this.bitPerMode[this.mode * 4 + l];
     let mul = 4;
     let tileData = (this.tileBufferP1[l] >> xShift) & 0x1;
@@ -494,9 +496,20 @@ function Ppu(snes) {
     let px = this.mode7Xcoords[rX] >> 8;
     let py = this.mode7Ycoords[rX] >> 8;
 
+    if(this.mode7LargeField && (px < 0 || px >= 1024 || py < 0 || py >= 1024)) {
+      if(this.mode7Char0fill) {
+        // always use tile 0
+        px &= 0x7;
+        py &= 0x7;
+      } else {
+        // act as transparent
+        return 0;
+      }
+    }
     // fetch the right tilemap byte
     let tileX = (px & 0x3f8) >> 3;
     let tileY = (py & 0x3f8) >> 3;
+
     let tileByte = this.vram[(tileY * 128 + tileX)] & 0xff;
     // fetch the tile
     let pixelData = this.vram[tileByte * 64 + (py & 0x7) * 8 + (px & 0x7)];
@@ -728,7 +741,7 @@ function Ppu(snes) {
         this.mosaicEnabled[1] = (value & 0x2) > 0;
         this.mosaicEnabled[2] = (value & 0x4) > 0;
         this.mosaicEnabled[3] = (value & 0x8) > 0;
-        this.mosaicSize = (value & 0xf0) >> 4;
+        this.mosaicSize = ((value & 0xf0) >> 4) + 1;
         this.mosaicStartLine = this.snes.yPos;
         return;
       }
