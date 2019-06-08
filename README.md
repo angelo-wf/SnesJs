@@ -1,11 +1,54 @@
 # SnesJs
 A SNES emulator, in javascript
 
-My attempt at making a SNES emulator in Javascript. Currently working on the PPU emulation.
+Try it online [here](https://elzo-d.github.io/SnesJs/).
 
-This will probably never end up being an accurate emulator, but I hope to have some games running at least. There is also a pretty big chance that it won't be able to run at full speed.
+## About
 
-Note that the CPU will not support emulation mode (at least for now), because it makes the code a lot more complicated (and probably slower), and no games seem to actually make use of it.
+This is my attempt at making a SNES emulator in Javascript. It is currently able to run some of the earlier games in the library, but without sound, and (at least on a 5th gen Core i5) not at full speed.
+
+The 65816 CPU is fully functional, but emulation mode is not supported. It is also not cycle-accurate.
+
+The PPU is able to render most things fine, but offset-per-tile mode and mode 7 ExtBG mode are not supported yet. There are also some issues with color math and mosaic with hires modes and mode 7. It renders per scanline, so mid-scanline effects are not supported.
+
+DMA, HDMA and the other misc. features are supported, but not cycle-accurate.
+
+The SPC700 audio CPU is emulated, but is not cycle accurate, and does not run at the right speed yet. It sees to have some issues with certain games (they freeze on boot or during gameplay, waiting on a response from it). This might be because of the speed being wrong, though.
+
+The DSP (audio generation unit) is not emulated yet (this might also be the cause for some of the games freezing).
+
+It can currently only load LOROM games.
+
+Roms can be loaded from zip-files as well, which will load the first file with a .sfc or .smc extension it can find.
+
+## Controls
+
+Controller 1 and 2 are emulated as plugged in, but only controller 1 has controls set up.
+
+| Button      | Keyboard        |
+| ----------- | --------------- |
+| D-pad up    | Up arrow key    |
+| D-pad down  | Down arrow key  |
+| D-pad left  | Left arrow key  |
+| D-pad right | Right arrow key |
+| Start       | Enter           |
+| Select      | Shift           |
+| A           | X               |
+| B           | Z               |
+| X           | S               |
+| Y           | A               |
+| L           | D               |
+| R           | C               |
+
+Pressing L will toggle 'log-mode', where it runs a single instruction each frame and logs it in trace-log format.
+
+## Usage
+
+Can be used online [here](https://elzo-d.github.io/SnesJs/).
+
+To run offline:
+- Clone this repository.
+- Open `index.js` in a browser. Messing around with the browser's autoplay policy might be required.
 
 ## Resources
 
@@ -20,6 +63,6 @@ Resources that I used for implementing this:
 - The [nocach fullsnes document](https://problemkaputt.de/fullsnes.txt).
 - Some posts in the [SnesDev section](https://forums.nesdev.com/viewforum.php?f=12) of the NesDev forums.
 - The [Super NES Programming pages](https://en.wikibooks.org/wiki/Super_NES_Programming) in Wikibooks.
-- The CPU tests by PeterLemon found [here](https://github.com/PeterLemon/SNES).
+- Various roms (especially the CPU tests) by PeterLemon found [here](https://github.com/PeterLemon/SNES).
 - Some of the wrapper code is based on my [NES emulator](https://github.com/elzo-d/NesJs).
 - The [zip.js](https://gildas-lormeau.github.io/zip.js/) library is used for zipped rom loading support.
