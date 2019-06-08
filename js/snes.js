@@ -581,7 +581,6 @@ function Snes() {
         this.dmaActive[7] = (value & 0x80) > 0;
         this.dmaBusy = value > 0;
         this.dmaTimer += this.dmaBusy ? 8 : 0;
-        //log("DMA start write: " + getByteRep(value));
         return;
       }
       case 0x420c: {
@@ -815,6 +814,7 @@ function Snes() {
     }
     if(rom.length < header.romSize) {
       let extraData = rom.length - (header.romSize / 2);
+      log("Extending rom to account for extra data");
       // extend the rom to end up at the correct size
       let nRom = new Uint8Array(header.romSize);
       for(let i = 0; i < nRom.length; i++) {
@@ -847,6 +847,9 @@ function Snes() {
       // probably wrong header?
       // seems to help with snes test program and such
       header.romSize = rom.length;
+      let bankCount = 2 ** Math.ceil(Math.log2(header.romSize / 0x8000));
+      header.romSize = bankCount * 0x8000;
+      log("Loaded with romSize of " + getLongRep(header.romSize));
     }
     return header;
   }

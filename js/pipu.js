@@ -204,7 +204,9 @@ function Ppu(snes) {
   }
   this.reset();
 
-  // TODO: mode 2/4/6 offset-per-tile, mode7 ExBG
+  // TODO: mode 2/4/6 offset-per-tile, mode7 ExBG, color math when subscreen
+  // is visible (especially when to use the fixed color), mosaic with
+  // hires/interlace, mosaic on mode 7, rectangular sprites
 
   this.renderLine = function(line) {
     if(line === 225 && this.overscan) {
@@ -258,12 +260,13 @@ function Ppu(snes) {
           g2 = (color & 0x3e0) >> 5;
           b2 = (color & 0x7c00) >> 10;
 
-          // TODO: does math have to be enabled for this clipping to happen?
-          if(this.getMathEnabled(i, colLay[1], colLay[2]) && (
+          // TODO: docs day that this clips before math, but it seems to simply
+          // always clip the pixels to black?
+          if(
             this.colorClip === 3 ||
             (this.colorClip === 2 && this.getWindowState(i, 5)) ||
             (this.colorClip === 1 && !this.getWindowState(i, 5))
-          )) {
+          ) {
             r2 = 0;
             g2 = 0;
             b2 = 0;
@@ -272,7 +275,7 @@ function Ppu(snes) {
           let secondLay = [0, 5, 0];
           if(
             this.mode === 5 || this.mode === 6 || this.pseudoHires ||
-            this.getMathEnabled(i, colLay[1], colLay[2]) && this.addSub
+            (this.getMathEnabled(i, colLay[1], colLay[2]) && this.addSub)
           ) {
             secondLay = this.getColor(true, i, line);
             r1 = secondLay[0] & 0x1f;
@@ -384,6 +387,8 @@ function Ppu(snes) {
       color = (b << 10) | (g << 5) | r;
     }
     // TODO: don't use fixed color in modes 5 and 6?
+    // the hires tests in the SNES character test needs this, but now the
+    // controller test doesn't turn the BG blue when it is passed
     if((pixel & 0xff) === 0 && sub && !(this.mode === 5 || this.mode === 6)) {
       color = this.fixedColor;
     }

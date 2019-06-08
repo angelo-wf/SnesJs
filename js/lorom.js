@@ -11,7 +11,7 @@ function Lorom(data, header) {
   log(
     "Loaded LOROM rom: \"" + header.name + "\"; " +
     "Banks: " + this.banks +
-    "; Sram size: $" + getWordRep(this.sramSize)
+    "; Sram size: $" + getWordRep(this.hasSram ? this.sramSize : 0)
   );
 
   this.reset = function(hard) {
