@@ -204,9 +204,7 @@ function Ppu(snes) {
   }
   this.reset();
 
-  // TODO: mode 2/4/6 offset-per-tile, mode7 ExBG, mode 5/6 horizontal hires,
-  // pseudo-hires, interlace mode (+logic for sprites, mode 5/6), windows,
-  // color math, color window
+  // TODO: mode 2/4/6 offset-per-tile, mode7 ExBG
 
   this.renderLine = function(line) {
     if(line === 225 && this.overscan) {
@@ -239,76 +237,202 @@ function Ppu(snes) {
       }
       this.lastTileFetchedX = [-1, -1, -1, -1];
       this.lastTileFetchedY = [-1, -1, -1, -1];
-      let modeIndex = this.layer3Prio && this.mode === 1 ? 96 : 12 * this.mode;
-      let count = this.layercountPerMode[this.mode];
       let bMult = this.brightnessMults[this.brightness];
       let i = 0;
       while(i < 256) {
         // for each pixel
 
-        let r1 = 0;
-        let g1 = 0;
-        let b1 = 0;
+        let r1 = this.fixedColor & 0x1f;
+        let g1 = (this.fixedColor & 0x3e0) >> 5;
+        let b1 = (this.fixedColor & 0x7c00) >> 10;
         let r2 = 0;
         let g2 = 0;
         let b2 = 0;
 
         if(!this.forcedBlank) {
 
-          let pixel = 0;
-          let layer = 5;
-          let j;
-          for(j = 0; j < count; j++) {
-            let x = i
-            let y = line;
-            layer = this.layersPerMode[modeIndex + j];
-            if(this.mainScreenEnabled[layer] || this.subScreenEnabled[layer]) {
-              if(this.mosaicEnabled[layer]) {
-                x -= x % this.mosaicSize;
-                y -= (y - this.mosaicStartLine) % this.mosaicSize;
-              }
-              x += this.mode === 7 ? 0 : this.bgHoff[layer];
-              y += this.mode === 7 ? 0 : this.bgVoff[layer];
-              pixel = this.getPixelForLayer(
-                x, y,
-                layer,
-                this.prioPerMode[modeIndex + j]
-              );
-            }
-            if(pixel > 0) {
-              break;
-            }
+          let colLay = this.getColor(false, i, line);
+          let color = colLay[0];
+
+          r2 = color & 0x1f;
+          g2 = (color & 0x3e0) >> 5;
+          b2 = (color & 0x7c00) >> 10;
+
+          // TODO: does math have to be enabled for this clipping to happen?
+          if(this.getMathEnabled(i, colLay[1], colLay[2]) && (
+            this.colorClip === 3 ||
+            (this.colorClip === 2 && this.getWindowState(i, 5)) ||
+            (this.colorClip === 1 && !this.getWindowState(i, 5))
+          )) {
+            r2 = 0;
+            g2 = 0;
+            b2 = 0;
           }
-          layer = j === count ? 5 : layer;
-          let color = this.cgram[pixel & 0xff];
+
+          let secondLay = [0, 5, 0];
           if(
-            this.directColor && layer < 4 &&
-            this.bitPerMode[this.mode * 4 + layer] === 8
+            this.mode === 5 || this.mode === 6 || this.pseudoHires ||
+            this.getMathEnabled(i, colLay[1], colLay[2]) && this.addSub
           ) {
-            let r = ((pixel & 0x7) << 2) | ((pixel & 0x100) >> 7);
-            let g = ((pixel & 0x38) >> 1) | ((pixel & 0x200) >> 8);
-            let b = ((pixel & 0xc0) >> 3) | ((pixel & 0x400) >> 8);
-            color = (b << 10) | (g << 5) | r;
+            secondLay = this.getColor(true, i, line);
+            r1 = secondLay[0] & 0x1f;
+            g1 = (secondLay[0] & 0x3e0) >> 5;
+            b1 = (secondLay[0] & 0x7c00) >> 10;
           }
-          r1 = ((color & 0x1f) * bMult) & 0xff;
-          g1 = (((color & 0x3e0) >> 5) * bMult) & 0xff;
-          b1 = (((color & 0x7c00) >> 10) * bMult) & 0xff;
-          r2 = r1;
-          g2 = g1;
-          b2 = b1;
+
+          if(this.getMathEnabled(i, colLay[1], colLay[2])) {
+            if(this.subtractColors) {
+              r2 = r2 - r1;
+              g2 = g2 - g1;
+              b2 = b2 - b1;
+            } else {
+              r2 = r2 + r1;
+              g2 = g2 + g1;
+              b2 = b2 + b1;
+            }
+            // TODO: docs say that halfing should not happen if adding the
+            // direct color, but that makes some effects in the SNES character
+            // test look wrong
+            if(this.halfColors && (secondLay[1] < 5 || !this.addSub)) {
+              r2 >>= 1;
+              g2 >>= 1;
+              b2 >>= 1;
+            }
+            r2 = r2 > 31 ? 31 : r2;
+            r2 = r2 < 0 ? 0 : r2;
+            g2 = g2 > 31 ? 31 : g2;
+            g2 = g2 < 0 ? 0 : g2;
+            b2 = b2 > 31 ? 31 : b2;
+            b2 = b2 < 0 ? 0 : b2;
+          }
+
+          if(!(this.mode === 5 || this.mode === 6 || this.pseudoHires)) {
+            r1 = r2;
+            g1 = g2;
+            b1 = b2;
+          }
+
         }
-        this.pixelOutput[line * 1536 + 6 * i] = r1;
-        this.pixelOutput[line * 1536 + 6 * i + 1] = g1;
-        this.pixelOutput[line * 1536 + 6 * i + 2] = b1;
-        this.pixelOutput[line * 1536 + 6 * i + 3] = r2;
-        this.pixelOutput[line * 1536 + 6 * i + 4] = g2;
-        this.pixelOutput[line * 1536 + 6 * i + 5] = b2;
+        this.pixelOutput[line * 1536 + 6 * i] = (r1 * bMult) & 0xff;
+        this.pixelOutput[line * 1536 + 6 * i + 1] = (g1 * bMult) & 0xff;
+        this.pixelOutput[line * 1536 + 6 * i + 2] = (b1 * bMult) & 0xff;
+        this.pixelOutput[line * 1536 + 6 * i + 3] = (r2 * bMult) & 0xff;
+        this.pixelOutput[line * 1536 + 6 * i + 4] = (g2 * bMult) & 0xff;
+        this.pixelOutput[line * 1536 + 6 * i + 5] = (b2 * bMult) & 0xff;
 
         i++;
 
       }
       if(!this.forcedBlank) {
         this.evaluateSprites(line);
+      }
+    }
+  }
+
+  this.getColor = function(sub, x, y) {
+
+    let modeIndex = this.layer3Prio && this.mode === 1 ? 96 : 12 * this.mode;
+    let count = this.layercountPerMode[this.mode];
+
+    let j;
+    let pixel = 0;
+    let layer = 5;
+    if(this.interlace && (this.mode === 5 || this.mode === 6)) {
+      y = y * 2 + (this.evenFrame ? 1 : 0);
+    }
+    for(j = 0; j < count; j++) {
+      let lx = x;
+      let ly = y;
+      layer = this.layersPerMode[modeIndex + j];
+      if(
+        (
+          !sub && this.mainScreenEnabled[layer] &&
+          (!this.mainScreenWindow[layer] || !this.getWindowState(lx, layer))
+        ) || (
+          sub && this.subScreenEnabled[layer] &&
+          (!this.subScreenWindow[layer] || !this.getWindowState(lx, layer))
+        )
+      ) {
+        if(this.mosaicEnabled[layer]) {
+          lx -= lx % this.mosaicSize;
+          ly -= (ly - this.mosaicStartLine) % this.mosaicSize;
+        }
+        lx += this.mode === 7 ? 0 : this.bgHoff[layer];
+        ly += this.mode === 7 ? 0 : this.bgVoff[layer];
+        if((this.mode === 5 || this.mode === 6) && layer < 4) {
+          lx = lx * 2 + (sub ? 0 : 1);
+        }
+        pixel = this.getPixelForLayer(
+          lx, ly,
+          layer,
+          this.prioPerMode[modeIndex + j]
+        );
+      }
+      if((pixel & 0xff) > 0) {
+        break;
+      }
+    }
+    layer = j === count ? 5 : layer;
+    let color = this.cgram[pixel & 0xff];
+    if(
+      this.directColor && layer < 4 &&
+      this.bitPerMode[this.mode * 4 + layer] === 8
+    ) {
+      let r = ((pixel & 0x7) << 2) | ((pixel & 0x100) >> 7);
+      let g = ((pixel & 0x38) >> 1) | ((pixel & 0x200) >> 8);
+      let b = ((pixel & 0xc0) >> 3) | ((pixel & 0x400) >> 8);
+      color = (b << 10) | (g << 5) | r;
+    }
+    // TODO: don't use fixed color in modes 5 and 6?
+    if((pixel & 0xff) === 0 && sub && !(this.mode === 5 || this.mode === 6)) {
+      color = this.fixedColor;
+    }
+    return [color, layer, pixel];
+  }
+
+  this.getMathEnabled = function(x, l, pal) {
+    if(
+      this.preventMath === 3 ||
+      (this.preventMath === 2 && this.getWindowState(x, 5)) ||
+      (this.preventMath === 1 && !this.getWindowState(x, 5))
+    ) {
+      return false;
+    }
+    if(this.mathEnabled[l] && (l !== 4 || pal >= 0xc0)) {
+      return true;
+    }
+    return false;
+  }
+
+  this.getWindowState = function(x, l) {
+    if(!this.window1Enabled[l] && !this.window2Enabled[l]) {
+      return false;
+    }
+    if(this.window1Enabled[l] && !this.window2Enabled[l]) {
+      let test = x >= this.window1Left && x <= this.window1Right;
+      return this.window1Inversed[l] ? !test : test;
+    }
+    if(!this.window1Enabled[l] && this.window2Enabled[l]) {
+      let test = x >= this.window2Left && x <= this.window2Right;
+      return this.window2Inversed[l] ? !test : test;
+    }
+    // both window enabled
+    let w1test = x >= this.window1Left && x <= this.window1Right;
+    w1test = this.window1Inversed[l] ? !w1test : w1test;
+    let w2test = x >= this.window2Left && x <= this.window2Right;
+    w2test = this.window2Inversed[l] ? !w2test : w2test;
+    switch(this.windowMaskLogic[l]) {
+      case 0: {
+        return w1test || w2test;
+      }
+      case 1: {
+        return w1test && w2test;
+      }
+      case 2: {
+        return w1test !== w2test;
+      }
+      case 3: {
+        return w1test === w2test;
       }
     }
   }
@@ -427,17 +551,23 @@ function Ppu(snes) {
       // check for being on this line
       let size = this.spriteSizes[this.objSize + (big ? 8 : 0)];
       let sprRow = line - y;
-      if(sprRow < 0 || sprRow >= size * 8) {
+      if(sprRow < 0 || sprRow >= size * (this.objInterlace ? 4 : 8)) {
         // check if it is a sprite from the top of the screen
         sprRow = line + (256 - y);
       }
-      if(sprRow >= 0 && sprRow < size * 8 && x > -(size * 8)) {
+      if(
+        sprRow >= 0 && sprRow < size * (this.objInterlace ? 4 : 8) &&
+        x > -(size * 8)
+      ) {
         // in range, show it
         if(spriteCount === 32) {
           // this would be the 33th sprite, exit the loop
           this.rangeOver = true;
           break;
         }
+        sprRow = this.objInterlace ? sprRow * 2 + (
+          this.evenFrame ? 1 : 0
+        ) : sprRow;
         // fetch the tile(s)
         let adr = this.sprAdr1 + ((ex & 0x1) > 0 ? this.sprAdr2 : 0);
         sprRow = ((ex & 0x80) > 0) ? (size * 8) - 1 - sprRow : sprRow;
@@ -450,7 +580,9 @@ function Ppu(snes) {
               break; // exit tile fetch loop, maximum slivers
             }
             let tileColumn = ((ex & 0x40) > 0) ? size - 1 - k : k;
-            let tileNum = tile + this.spriteTileOffsets[tileRow * 8 + tileColumn];
+            let tileNum = tile + this.spriteTileOffsets[
+              tileRow * 8 + tileColumn
+            ];
             tileNum &= 0xff;
             let tileP1 = this.vram[
               (adr + tileNum * 16 + sprRow) & 0x7fff
@@ -1078,15 +1210,19 @@ function Ppu(snes) {
       let r = this.pixelOutput[i * 3];
       let g = this.pixelOutput[i * 3 + 1];
       let b = this.pixelOutput[i * 3 + 2];
-      arr[ind] = r;
-      arr[ind + 1] = g;
-      arr[ind + 2] = b;
-      arr[ind + 3] = 255;
+      if(!this.frameInterlace || this.evenFrame) {
+        arr[ind] = r;
+        arr[ind + 1] = g;
+        arr[ind + 2] = b;
+        arr[ind + 3] = 255;
+      }
       ind += 512 * 4;
-      arr[ind] = r;
-      arr[ind + 1] = g;
-      arr[ind + 2] = b;
-      arr[ind + 3] = 255;
+      if(!this.frameInterlace || !this.evenFrame) {
+        arr[ind] = r;
+        arr[ind + 1] = g;
+        arr[ind + 2] = b;
+        arr[ind + 3] = 255;
+      }
     }
   }
 
