@@ -9,11 +9,11 @@ This is my attempt at making a SNES emulator in Javascript. It is currently able
 
 The 65816 CPU is fully functional, but emulation mode is not supported. It is also not cycle-accurate.
 
-The PPU is able to render most things fine, but offset-per-tile mode and mode 7 ExtBG mode are not supported yet. There are also some issues with color math and mosaic with hires modes and mode 7. It renders per scanline, so mid-scanline effects are not supported.
+The PPU is able to render most things fine. There are some issues with color math, mosaic and offset-per-tile, and other small things that are not quite right yet. It renders per scanline, so mid-scanline effects are not supported.
 
 DMA, HDMA and the other misc. features are supported, but not cycle-accurate.
 
-The SPC700 audio CPU is emulated, but is not cycle accurate, and does not run at the right speed yet. It sees to have some issues with certain games (they freeze on boot or during gameplay, waiting on a response from it). This might be because of the speed being wrong, though.
+The SPC700 audio CPU is emulated, but is not cycle accurate, and does not run at the right speed yet. It seems to have some issues with certain games (they freeze on boot or during gameplay, waiting on a response from it). This might be because of the speed being wrong, though.
 
 The DSP (audio generation unit) is not emulated yet (this might also be the cause for some of the games freezing).
 

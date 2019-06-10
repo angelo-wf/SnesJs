@@ -27,7 +27,8 @@ function Ppu(snes) {
     4, 0, 4, 1, 4, 0, 4, 1, 5, 5, 5, 5,
     4, 0, 4, 4, 0, 4, 5, 5, 5, 5, 5, 5,
     4, 4, 4, 0, 4, 5, 5, 5, 5, 5, 5, 5,
-    2, 4, 0, 1, 4, 0, 1, 4, 2, 4, 5, 5
+    2, 4, 0, 1, 4, 0, 1, 4, 2, 4, 5, 5,
+    4, 4, 1, 4, 0, 4, 1, 5, 5, 5, 5, 5
   ];
 
   this.prioPerMode = [
@@ -39,7 +40,8 @@ function Ppu(snes) {
     3, 1, 2, 1, 1, 0, 0, 0, 5, 5, 5, 5,
     3, 1, 2, 1, 0, 0, 5, 5, 5, 5, 5, 5,
     3, 2, 1, 0, 0, 5, 5, 5, 5, 5, 5, 5,
-    1, 3, 1, 1, 2, 0, 0, 1, 0, 0, 5, 5
+    1, 3, 1, 1, 2, 0, 0, 1, 0, 0, 5, 5,
+    3, 2, 1, 1, 0, 0, 0, 5, 5, 5, 5, 5
   ];
 
   this.bitPerMode = [
@@ -51,10 +53,11 @@ function Ppu(snes) {
     4, 2, 5, 5,
     4, 5, 5, 5,
     8, 5, 5, 5,
-    4, 4, 2, 5
+    4, 4, 2, 5,
+    8, 7, 5, 5
   ];
 
-  this.layercountPerMode = [12, 10, 8, 8, 8, 8, 6, 5, 10];
+  this.layercountPerMode = [12, 10, 8, 8, 8, 8, 6, 5, 10, 7];
 
   this.brightnessMults = [
     0.1, 0.5, 1.1, 1.6, 2.2, 2.7, 3.3, 3.8, 4.4, 4.9, 5.5, 6, 6.6, 7.1, 7.6, 8.2
@@ -192,7 +195,9 @@ function Ppu(snes) {
     this.subtractColors = false;
     this.halfColors = false;
     this.mathEnabled = [false, false, false, false, false, false];
-    this.fixedColor = 0;
+    this.fixedColorB = 0;
+    this.fixedColorG = 0;
+    this.fixedColorR = 0;
 
     this.tilemapBuffer = [0, 0, 0, 0];
     this.tileBufferP1 = [0, 0, 0, 0];
@@ -201,12 +206,17 @@ function Ppu(snes) {
     this.tileBufferP4 = [0, 0, 0, 0];
     this.lastTileFetchedX = [-1, -1, -1, -1];
     this.lastTileFetchedY = [-1, -1, -1, -1];
+    this.optHorBuffer = [0, 0];
+    this.optVerBuffer = [0, 0];
+    this.lastOrigTileX = [-1, -1];
   }
   this.reset();
 
-  // TODO: mode 2/4/6 offset-per-tile, mode7 ExBG, color math when subscreen
-  // is visible (especially when to use the fixed color), mosaic with
-  // hires/interlace, mosaic on mode 7, rectangular sprites
+  // TODO: better mode 2/4/6 offset-per-tile (especially mode 6), color math
+  // when subscreen is visible (especially how to handle the subscreen pixels),
+  // mosaic with hires/interlace, mosaic on mode 7, rectangular sprites,
+  // oddities with sprite X-position being -256, mosaic with offset-per-tile,
+  // offset-per-tile with interlace
 
   this.renderLine = function(line) {
     if(line === 225 && this.overscan) {
@@ -239,14 +249,17 @@ function Ppu(snes) {
       }
       this.lastTileFetchedX = [-1, -1, -1, -1];
       this.lastTileFetchedY = [-1, -1, -1, -1];
+      this.optHorBuffer = [0, 0];
+      this.optVerBuffer = [0, 0];
+      this.lastOrigTileX = [-1, -1];
       let bMult = this.brightnessMults[this.brightness];
       let i = 0;
       while(i < 256) {
         // for each pixel
 
-        let r1 = this.fixedColor & 0x1f;
-        let g1 = (this.fixedColor & 0x3e0) >> 5;
-        let b1 = (this.fixedColor & 0x7c00) >> 10;
+        let r1 = 0;
+        let g1 = 0;
+        let b1 = 0;
         let r2 = 0;
         let g2 = 0;
         let b2 = 0;
@@ -285,13 +298,13 @@ function Ppu(snes) {
 
           if(this.getMathEnabled(i, colLay[1], colLay[2])) {
             if(this.subtractColors) {
-              r2 = r2 - r1;
-              g2 = g2 - g1;
-              b2 = b2 - b1;
+              r2 -= (this.addSub && secondLay[1] < 5) ? r1 : this.fixedColorR;
+              g2 -= (this.addSub && secondLay[1] < 5) ? g1 : this.fixedColorG;
+              b2 -= (this.addSub && secondLay[1] < 5) ? b1 : this.fixedColorB;
             } else {
-              r2 = r2 + r1;
-              g2 = g2 + g1;
-              b2 = b2 + b1;
+              r2 += (this.addSub && secondLay[1] < 5) ? r1 : this.fixedColorR;
+              g2 += (this.addSub && secondLay[1] < 5) ? g1 : this.fixedColorG;
+              b2 += (this.addSub && secondLay[1] < 5) ? b1 : this.fixedColorB;
             }
             // TODO: docs say that halfing should not happen if adding the
             // direct color, but that makes some effects in the SNES character
@@ -335,6 +348,7 @@ function Ppu(snes) {
   this.getColor = function(sub, x, y) {
 
     let modeIndex = this.layer3Prio && this.mode === 1 ? 96 : 12 * this.mode;
+    modeIndex = this.mode7ExBg && this.mode === 7 ? 108 : modeIndex;
     let count = this.layercountPerMode[this.mode];
 
     let j;
@@ -362,9 +376,63 @@ function Ppu(snes) {
         }
         lx += this.mode === 7 ? 0 : this.bgHoff[layer];
         ly += this.mode === 7 ? 0 : this.bgVoff[layer];
+        let optX = x;
         if((this.mode === 5 || this.mode === 6) && layer < 4) {
           lx = lx * 2 + (sub ? 0 : 1);
+          optX = optX * 2 + (sub ? 0 : 1);
         }
+
+        //let origLx = lx;
+
+        if((this.mode === 2 || this.mode === 4 || this.mode === 6) && layer < 2) {
+          let andVal = layer === 0 ? 0x2000 : 0x4000;
+          if(x === 0) {
+            this.lastOrigTileX[layer] = lx >> 3;
+          }
+          if((lx >> 3) !== this.lastOrigTileX[layer] && x > 0) {
+            // we are fetching a new tile for the layer, get a new OPT-tile
+            // if(logging && y === 32 && (this.mode === 2 || this.mode === 4 || this.mode === 6) && layer === 0) {
+            //   log("at X = " + x + ", lx: " + getWordRep(lx) + ", fetched new tile for OPT");
+            // }
+            let tileStartX = optX - (lx - (lx & 0xfff8));
+            this.fetchTileInBuffer(
+              this.bgHoff[2] + ((tileStartX - 1) & 0x1f8),
+              this.bgVoff[2], 2, true
+            );
+            this.optHorBuffer[layer] = this.tilemapBuffer[2];
+            if(this.mode === 4) {
+              if((this.optHorBuffer[layer] & 0x8000) > 0) {
+                this.optVerBuffer[layer] = this.optHorBuffer[layer];
+                this.optHorBuffer[layer] = 0;
+              } else {
+                this.optVerBuffer[layer] = 0;
+              }
+            } else {
+              this.fetchTileInBuffer(
+                this.bgHoff[2] + ((tileStartX - 1) & 0x1f8),
+                this.bgVoff[2] + 8, 2, true
+              );
+              this.optVerBuffer[layer] = this.tilemapBuffer[2];
+            }
+            // TODO: this wierdness with adding the scroll here should not
+            // be needed
+            this.optHorBuffer[layer] = (this.optHorBuffer[layer] & 0xe000) | (
+              ((this.optHorBuffer[layer] & 0x1ff8) + ((x + 7) & 0x1f8)) & 0x1fff
+            );
+            this.lastOrigTileX[layer] = lx >> 3;
+          }
+          if((this.optHorBuffer[layer] & andVal) > 0) {
+            //origLx = lx;
+            lx = (lx & 0x7) + (this.optHorBuffer[layer] & 0x1fff);
+          }
+          if((this.optVerBuffer[layer] & andVal) > 0) {
+            ly = (this.optVerBuffer[layer] & 0x1fff) + y;
+          }
+        }
+        // if(logging && y === 32 && (this.mode === 2 || this.mode === 4 || this.mode === 6) && layer === 0) {
+        //   log("at X = " + x + ", lx: " + getWordRep(lx) + ", ly: " + getWordRep(ly) + ", optHB: " + getWordRep(this.optHorBuffer[layer]) + ", orig lx: " + getWordRep(origLx));
+        // }
+
         pixel = this.getPixelForLayer(
           lx, ly,
           layer,
@@ -386,12 +454,7 @@ function Ppu(snes) {
       let b = ((pixel & 0xc0) >> 3) | ((pixel & 0x400) >> 8);
       color = (b << 10) | (g << 5) | r;
     }
-    // TODO: don't use fixed color in modes 5 and 6?
-    // the hires tests in the SNES character test needs this, but now the
-    // controller test doesn't turn the BG blue when it is passed
-    if((pixel & 0xff) === 0 && sub && !(this.mode === 5 || this.mode === 6)) {
-      color = this.fixedColor;
-    }
+
     return [color, layer, pixel];
   }
 
@@ -451,14 +514,14 @@ function Ppu(snes) {
     }
 
     if(this.mode === 7) {
-      return this.getMode7Pixel(x, y);
+      return this.getMode7Pixel(x, y, l, p);
     }
 
     if(
       (x >> 3) !== this.lastTileFetchedX[l] ||
       (y >> 3) !== this.lastTileFetchedY[l]
     ) {
-      this.fetchTileInBuffer(x, y, l);
+      this.fetchTileInBuffer(x, y, l, false);
       this.lastTileFetchedX[l] = (x >> 3);
       this.lastTileFetchedY[l] = (y >> 3);
     }
@@ -495,7 +558,7 @@ function Ppu(snes) {
     return tileData > 0 ? (paletteNum * mul + tileData) : 0;
   }
 
-  this.fetchTileInBuffer = function(x, y, l) {
+  this.fetchTileInBuffer = function(x, y, l, offset) {
     let rx = x;
     let ry = y;
     let useXbig = this.bigTiles[l] | this.mode === 5 | this.mode === 6;
@@ -510,6 +573,11 @@ function Ppu(snes) {
       this.tilemapWider[l] ? 2048 : 1024
     ) : 0;
     this.tilemapBuffer[l] = this.vram[adr & 0x7fff];
+    if(offset) {
+      // for offset-per-tile, we only nees the tilemap byte,
+      // don't fetch the tiles themselves
+      return;
+    }
     let yFlip = (this.tilemapBuffer[l] & 0x8000) > 0;
     let xFlip = (this.tilemapBuffer[l] & 0x4000) > 0;
     let yRow = yFlip ? 7 - (ry & 0x7) : (ry & 0x7);
@@ -654,30 +722,46 @@ function Ppu(snes) {
     }
   }
 
-  this.getMode7Pixel = function(x, y) {
-    let rX = this.mode7FlipX ? 255 - x : x;
+  this.getMode7Pixel = function(x, y, l, p) {
+    let pixelData = this.tilemapBuffer[0];
+    if(x !== this.lastTileFetchedX[0] || y !== this.lastTileFetchedY[0]) {
+      let rX = this.mode7FlipX ? 255 - x : x;
 
-    let px = this.mode7Xcoords[rX] >> 8;
-    let py = this.mode7Ycoords[rX] >> 8;
+      let px = this.mode7Xcoords[rX] >> 8;
+      let py = this.mode7Ycoords[rX] >> 8;
 
-    if(this.mode7LargeField && (px < 0 || px >= 1024 || py < 0 || py >= 1024)) {
-      if(this.mode7Char0fill) {
-        // always use tile 0
-        px &= 0x7;
-        py &= 0x7;
-      } else {
-        // act as transparent
-        return 0;
+      let pixelIsTransparent = false;
+
+      if(this.mode7LargeField && (px < 0 || px >= 1024 || py < 0 || py >= 1024)) {
+        if(this.mode7Char0fill) {
+          // always use tile 0
+          px &= 0x7;
+          py &= 0x7;
+        } else {
+          // act as transparent
+          pixelIsTransparent = true;
+        }
       }
-    }
-    // fetch the right tilemap byte
-    let tileX = (px & 0x3f8) >> 3;
-    let tileY = (py & 0x3f8) >> 3;
+      // fetch the right tilemap byte
+      let tileX = (px & 0x3f8) >> 3;
+      let tileY = (py & 0x3f8) >> 3;
 
-    let tileByte = this.vram[(tileY * 128 + tileX)] & 0xff;
-    // fetch the tile
-    let pixelData = this.vram[tileByte * 64 + (py & 0x7) * 8 + (px & 0x7)];
-    pixelData >>= 8;
+      let tileByte = this.vram[(tileY * 128 + tileX)] & 0xff;
+      // fetch the tile
+      pixelData = this.vram[tileByte * 64 + (py & 0x7) * 8 + (px & 0x7)];
+      pixelData >>= 8;
+      pixelData = pixelIsTransparent ? 0 : pixelData;
+      this.tilemapBuffer[0] = pixelData;
+      this.lastTileFetchedX[0] = x;
+      this.lastTileFetchedY[0] = y;
+    }
+
+    if(l === 1 && (pixelData >> 7) !== p) {
+      // wrong priority
+      return 0;
+    } else if(l === 1) {
+      return pixelData & 0x7f;
+    }
 
     return pixelData;
   }
@@ -738,7 +822,7 @@ function Ppu(snes) {
         this.latchedVpos = this.snes.yPos;
         //}
         this.countersLatched = true;
-        return 0;
+        return this.snes.openBus;
       }
       case 0x38: {
         let val;
@@ -1167,13 +1251,13 @@ function Ppu(snes) {
       }
       case 0x32: {
         if((value & 0x80) > 0) {
-          this.fixedColor = (this.fixedColor & 0x3ff) | ((value & 0x1f) << 10);
+          this.fixedColorB = value & 0x1f;
         }
         if((value & 0x40) > 0) {
-          this.fixedColor = (this.fixedColor & 0x7c1f) | ((value & 0x1f) << 5);
+          this.fixedColorG = value & 0x1f;
         }
         if((value & 0x20) > 0) {
-          this.fixedColor = (this.fixedColor & 0x7fe0) | (value & 0x1f);
+          this.fixedColorR = value & 0x1f;
         }
         return;
       }

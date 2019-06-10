@@ -152,6 +152,7 @@ function runFrame() {
     //   }
     // } while(!(snes.xPos === 0 && snes.yPos === 0));
   }
+  //snes.runFrame();
 
   snes.setPixels(imgData.data);
   ctx.putImageData(imgData, 0, 0);
