@@ -389,12 +389,13 @@ function Ppu(snes) {
           if(x === 0) {
             this.lastOrigTileX[layer] = lx >> 3;
           }
+          // where the relevant tile started
+          let tileStartX = optX - (lx - (lx & 0xfff8));
           if((lx >> 3) !== this.lastOrigTileX[layer] && x > 0) {
             // we are fetching a new tile for the layer, get a new OPT-tile
             // if(logging && y === 32 && (this.mode === 2 || this.mode === 4 || this.mode === 6) && layer === 0) {
             //   log("at X = " + x + ", lx: " + getWordRep(lx) + ", fetched new tile for OPT");
             // }
-            let tileStartX = optX - (lx - (lx & 0xfff8));
             this.fetchTileInBuffer(
               this.bgHoff[2] + ((tileStartX - 1) & 0x1f8),
               this.bgVoff[2], 2, true
@@ -414,19 +415,15 @@ function Ppu(snes) {
               );
               this.optVerBuffer[layer] = this.tilemapBuffer[2];
             }
-            // TODO: this wierdness with adding the scroll here should not
-            // be needed
-            this.optHorBuffer[layer] = (this.optHorBuffer[layer] & 0xe000) | (
-              ((this.optHorBuffer[layer] & 0x1ff8) + ((x + 7) & 0x1f8)) & 0x1fff
-            );
             this.lastOrigTileX[layer] = lx >> 3;
           }
           if((this.optHorBuffer[layer] & andVal) > 0) {
             //origLx = lx;
-            lx = (lx & 0x7) + (this.optHorBuffer[layer] & 0x1fff);
+            let add = ((tileStartX + 7) & 0x1f8);
+            lx = (lx & 0x7) + ((this.optHorBuffer[layer] + add) & 0x1ff8);
           }
           if((this.optVerBuffer[layer] & andVal) > 0) {
-            ly = (this.optVerBuffer[layer] & 0x1fff) + y;
+            ly = (this.optVerBuffer[layer] & 0x1fff) + (ly -= this.bgVoff[layer]);
           }
         }
         // if(logging && y === 32 && (this.mode === 2 || this.mode === 4 || this.mode === 6) && layer === 0) {
@@ -519,11 +516,11 @@ function Ppu(snes) {
 
     if(
       (x >> 3) !== this.lastTileFetchedX[l] ||
-      (y >> 3) !== this.lastTileFetchedY[l]
+      y !== this.lastTileFetchedY[l]
     ) {
       this.fetchTileInBuffer(x, y, l, false);
       this.lastTileFetchedX[l] = (x >> 3);
-      this.lastTileFetchedY[l] = (y >> 3);
+      this.lastTileFetchedY[l] = y;
     }
 
     let mapWord = this.tilemapBuffer[l];
