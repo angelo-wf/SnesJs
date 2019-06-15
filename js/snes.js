@@ -800,7 +800,7 @@ function Snes() {
       header = this.parseHeader(rom);
     } else if((rom.length - 512) % 0x8000 === 0) {
       // 512-byte copier header
-      rom = Array.prototype.slice.call(rom, 512);
+      rom = new Uint8Array(Array.prototype.slice.call(rom, 512));
       header = this.parseHeader(rom);
     } else {
       log("Failed to load rom: Incorrect size - " + rom.length);
@@ -821,7 +821,7 @@ function Snes() {
         if(i < (header.romSize / 2)) {
           nRom[i] = rom[i];
         } else {
-          nRom[i] = rom[(header.romSize / 2) + (i & (extraData - 1))];
+          nRom[i] = rom[(header.romSize / 2) + (i % extraData)];
         }
       }
       rom = nRom;

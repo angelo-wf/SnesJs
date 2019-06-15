@@ -17,6 +17,8 @@ The SPC700 audio CPU is emulated, but is not cycle accurate, and does not run at
 
 The DSP (audio generation unit) is not emulated yet (this might also be the cause for some of the games freezing).
 
+Some games seem to have other problems as well, which are probably caused by bugs in the CPU emulation or in the other features.
+
 It can currently only load LOROM games.
 
 Roms can be loaded from zip-files as well, which will load the first file with a .sfc or .smc extension it can find.

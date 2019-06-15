@@ -27,6 +27,8 @@ function Apu(snes) {
     this.dspAdr = 0;
     this.dspRomReadable = true;
 
+    this.cycles = 0;
+
     // timers
     this.timer1int = 0;
     this.timer1div = 0;
@@ -92,6 +94,7 @@ function Apu(snes) {
     }
     this.timer3int--;
 
+    this.cycles++;
   }
 
   this.read = function(adr) {

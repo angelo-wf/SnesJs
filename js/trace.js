@@ -155,11 +155,11 @@ function getSpcDisassembly(cpu) {
       }
       str += " $" + getWordRep(wob) + "." + wobd + end; break;
     }
-    case 17: str += " $" + getByteRep(p1) + "+X, " + getWordRep((cpu.br[0] + 3 + cpu.getSigned(p2)) & 0xffff) + end; break;
+    case 17: str += " $" + getByteRep(p1) + "+X, $" + getWordRep((cpu.br[0] + 3 + cpu.getSigned(p2)) & 0xffff) + end; break;
     case 18: str += " [$" + getWordRep(wo) + "+X]" + end; break;
     case 19: str += " (X+)" + end; break;
   }
-  let spaces = 16 - str.length;
+  let spaces = 20 - str.length;
   for(let i = 0; i < spaces; i++) {
     str += " ";
   }

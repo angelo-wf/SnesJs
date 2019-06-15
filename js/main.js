@@ -138,7 +138,16 @@ function runFrame() {
   if(logging) {
     do {
       snes.cycle();
-    } while(snes.cpuCyclesLeft > 0);
+      if((snes.xPos % 20) === 0 && snes.apu.spc.cyclesLeft === 0) {
+        log(getSpcTrace(
+          snes.apu.spc, snes.apu.cycles
+        ));
+      }
+    } while(
+      snes.cpuCyclesLeft > 0 ||
+      (snes.xPos >= 536 && snes.xPos < 576) ||
+      snes.hdmaTimer > 0
+    );
     log(getTrace(
       snes.cpu, snes.frames * 1364 * 262 + snes.yPos * 1364 + snes.xPos
     ));
@@ -152,7 +161,7 @@ function runFrame() {
     //   }
     // } while(!(snes.xPos === 0 && snes.yPos === 0));
   }
-  //snes.runFrame();
+  // snes.runFrame();
 
   snes.setPixels(imgData.data);
   ctx.putImageData(imgData, 0, 0);

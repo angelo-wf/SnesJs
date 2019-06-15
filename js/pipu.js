@@ -376,7 +376,7 @@ function Ppu(snes) {
         }
         lx += this.mode === 7 ? 0 : this.bgHoff[layer];
         ly += this.mode === 7 ? 0 : this.bgVoff[layer];
-        let optX = x;
+        let optX = lx - this.bgHoff[layer];
         if((this.mode === 5 || this.mode === 6) && layer < 4) {
           lx = lx * 2 + (sub ? 0 : 1);
           optX = optX * 2 + (sub ? 0 : 1);
@@ -390,6 +390,7 @@ function Ppu(snes) {
             this.lastOrigTileX[layer] = lx >> 3;
           }
           // where the relevant tile started
+          // TODO: lx can be above 0xffff (e.g. if scroll is 0xffff, and x > 0)
           let tileStartX = optX - (lx - (lx & 0xfff8));
           if((lx >> 3) !== this.lastOrigTileX[layer] && x > 0) {
             // we are fetching a new tile for the layer, get a new OPT-tile
@@ -423,7 +424,7 @@ function Ppu(snes) {
             lx = (lx & 0x7) + ((this.optHorBuffer[layer] + add) & 0x1ff8);
           }
           if((this.optVerBuffer[layer] & andVal) > 0) {
-            ly = (this.optVerBuffer[layer] & 0x1fff) + (ly -= this.bgVoff[layer]);
+            ly = (this.optVerBuffer[layer] & 0x1fff) + (ly - this.bgVoff[layer]);
           }
         }
         // if(logging && y === 32 && (this.mode === 2 || this.mode === 4 || this.mode === 6) && layer === 0) {
