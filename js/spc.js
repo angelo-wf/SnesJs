@@ -336,6 +336,7 @@ Spc = (function() {
 
     this.clrv = function(adr, adrh, instr) {
       this.v = false;
+      this.h = false;
     }
 
     this.bpl = function(adr, adrh, instr) {

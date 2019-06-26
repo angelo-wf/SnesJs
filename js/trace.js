@@ -1,4 +1,5 @@
 
+// TODO: peek functions to avoid side effects of reading
 
 function getTrace(cpu, cycles) {
   let str = "";
@@ -133,9 +134,9 @@ function getSpcDisassembly(cpu) {
     case 2: str += " $" + getByteRep(p1) + end; break;
     case 3: {
       if((op & 0xf) === 3) {
-        str += " $" + getByteRep(p1) + end + ", " + getWordRep((cpu.br[0] + 3 + cpu.getSigned(p2)) & 0xffff); break;
+        str += " $" + getByteRep(p1) + end + ", $" + getWordRep((cpu.br[0] + 3 + cpu.getSigned(p2)) & 0xffff); break;
       }
-      str += " $" + getByteRep(p1) + ", " + getWordRep((cpu.br[0] + 3 + cpu.getSigned(p2)) & 0xffff) + end; break;
+      str += " $" + getByteRep(p1) + ", $" + getWordRep((cpu.br[0] + 3 + cpu.getSigned(p2)) & 0xffff) + end; break;
     }
     case 4: str += " $" + getWordRep(wo) + end; break;
     case 5: str += " (X)" + end; break;
