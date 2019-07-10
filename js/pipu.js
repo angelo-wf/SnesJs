@@ -228,6 +228,7 @@ function Ppu(snes) {
       this.timeOver = false;
       this.frameOverscan = false;
       this.frameInterlace = false;
+      clearArray(this.spriteLineBuffer);
       if(!this.forcedBlank) {
         this.evaluateSprites(0);
       }
@@ -339,6 +340,7 @@ function Ppu(snes) {
         i++;
 
       }
+      clearArray(this.spriteLineBuffer);
       if(!this.forcedBlank) {
         this.evaluateSprites(line);
       }
@@ -605,7 +607,6 @@ function Ppu(snes) {
   }
 
   this.evaluateSprites = function(line) {
-    clearArray(this.spriteLineBuffer);
     let spriteCount = 0;
     let sliverCount = 0;
     // search through oam, backwards

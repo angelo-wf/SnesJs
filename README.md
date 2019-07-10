@@ -13,11 +13,11 @@ The PPU is able to render most things fine. There are some issues with color mat
 
 DMA, HDMA and the other misc. features are supported, but not cycle-accurate.
 
-The SPC700 audio CPU is emulated, but is not cycle accurate, and does not run at the right speed yet. It seems to have some issues with certain games (they freeze on boot or during gameplay, waiting on a response from it). This might be because of the speed being wrong, though.
+The SPC700 audio CPU is emulated, but is not cycle accurate, and does not run at the right speed yet.
 
-The DSP (audio generation unit) is not emulated yet (this might also be the cause for some of the games freezing).
+The DSP (audio generation unit) is not emulated yet.
 
-Some games seem to have other problems as well, which are probably caused by bugs in the CPU emulation or in the other features.
+Although some games seem to run fine, quite a few games are not emulated properly. The file `bugs.md` contains a list of games that have been tested and the problems they have.
 
 It can currently only load LOROM games.
 
