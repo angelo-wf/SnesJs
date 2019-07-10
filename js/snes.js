@@ -846,8 +846,7 @@ function Snes() {
     if(header.romSize < 0x8000) {
       // probably wrong header?
       // seems to help with snes test program and such
-      header.romSize = rom.length;
-      let bankCount = 2 ** Math.ceil(Math.log2(header.romSize / 0x8000));
+      let bankCount = Math.pow(2, Math.ceil(Math.log2(rom.length / 0x8000)));
       header.romSize = bankCount * 0x8000;
       log("Loaded with romSize of " + getLongRep(header.romSize));
     }

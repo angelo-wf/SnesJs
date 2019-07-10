@@ -813,8 +813,9 @@ function Ppu(snes) {
         return (this.multResult & 0xff0000) >> 16;
       }
       case 0x37: {
-        // TODO: docs say this should only happen if bit 7 of the IO port
-        // is set, but always doing it makes Zelda 3 work
+        // TODO: docs say this should only happen if bit 7 of the IO port is
+        // set, but always doing it makes The Legend of Zelda: A Link to the
+        // Past work
         //if(this.snes.ppuLatch) {
         this.latchedHpos = this.snes.xPos >> 2;
         this.latchedVpos = this.snes.yPos;
@@ -914,7 +915,7 @@ function Ppu(snes) {
         return val | 0x2;
       }
     }
-    return 0;
+    return this.snes.openBus;
   }
 
   this.write = function(adr, value) {

@@ -487,10 +487,6 @@ Cpu = (function() {
           // absolute
           let adr = this.mem.read((this.r[K] << 16) | this.br[PC]++);
           adr |= this.mem.read((this.r[K] << 16) | this.br[PC]++) << 8;
-          if(opcode === 0x4c || opcode === 0x22) {
-            // JMP and JSR use K instead of DBR
-            return [(this.r[K] << 16) + adr, 0];
-          }
           return [(this.r[DBR] << 16) + adr, (this.r[DBR] << 16) + adr + 1];
         }
 
@@ -564,7 +560,6 @@ Cpu = (function() {
           adr |= this.mem.read((this.r[K] << 16) | this.br[PC]++) << 8;
           let pointer = this.mem.read(adr);
           pointer |= this.mem.read((adr + 1) & 0xffff) << 8;
-          // only used by JMP, which uses K
           return [(this.r[K] << 16) + pointer, 0];
         }
 
@@ -578,7 +573,6 @@ Cpu = (function() {
           pointer |= this.mem.read(
             (this.r[K] << 16) | ((adr + this.br[X] + 1) & 0xffff)
           ) << 8;
-          // only used by JMP and JSR, which use K
           return [(this.r[K] << 16) + pointer, 0];
         }
 
@@ -589,7 +583,6 @@ Cpu = (function() {
           let pointer = this.mem.read(adr);
           pointer |= this.mem.read((adr + 1) & 0xffff) << 8;
           pointer |= this.mem.read((adr + 2) & 0xffff) << 16;
-          // only used by JMP
           return [pointer, 0];
         }
 
@@ -1157,6 +1150,10 @@ Cpu = (function() {
     }
 
     this.jmp = function(adr, adrh) {
+      this.br[PC] = adr & 0xffff;
+    }
+
+    this.jml = function(adr, adrh) {
       this.r[K] = (adr & 0xff0000) >> 16;
       this.br[PC] = adr & 0xffff;
     }
@@ -1361,8 +1358,8 @@ Cpu = (function() {
     this.mvn = function(adr, adrh) {
       this.r[DBR] = adr;
       this.mem.write(
-        adr << 16 | this.br[Y],
-        this.mem.read(adrh << 16 | this.br[X])
+        (adr << 16) | this.br[Y],
+        this.mem.read((adrh << 16) | this.br[X])
       );
       this.br[A]--;
       this.br[X]++;
@@ -1379,8 +1376,8 @@ Cpu = (function() {
     this.mvp = function(adr, adrh) {
       this.r[DBR] = adr;
       this.mem.write(
-        adr << 16 | this.br[Y],
-        this.mem.read(adrh << 16 | this.br[X])
+        (adr << 16) | this.br[Y],
+        this.mem.read((adrh << 16) | this.br[X])
       );
       this.br[A]--;
       this.br[X]--;
@@ -1633,7 +1630,7 @@ Cpu = (function() {
       this.jsr, this.and, this.jsl, this.and, this.bit, this.and, this.rol, this.and, this.plp, this.and, this.rola,this.pld, this.bit, this.and, this.rol, this.and,
       this.bmi, this.and, this.and, this.and, this.bit, this.and, this.rol, this.and, this.sec, this.and, this.deca,this.tsc, this.bit, this.and, this.rol, this.and,
       this.rti, this.eor, this.wdm, this.eor, this.mvp, this.eor, this.lsr, this.eor, this.pha, this.eor, this.lsra,this.phk, this.jmp, this.eor, this.lsr, this.eor,
-      this.bvc, this.eor, this.eor, this.eor, this.mvn, this.eor, this.lsr, this.eor, this.cli, this.eor, this.phy, this.tcd, this.jmp, this.eor, this.lsr, this.eor,
+      this.bvc, this.eor, this.eor, this.eor, this.mvn, this.eor, this.lsr, this.eor, this.cli, this.eor, this.phy, this.tcd, this.jml, this.eor, this.lsr, this.eor,
       this.rts, this.adc, this.per, this.adc, this.stz, this.adc, this.ror, this.adc, this.pla, this.adc, this.rora,this.rtl, this.jmp, this.adc, this.ror, this.adc,
       this.bvs, this.adc, this.adc, this.adc, this.stz, this.adc, this.ror, this.adc, this.sei, this.adc, this.ply, this.tdc, this.jmp, this.adc, this.ror, this.adc,
       this.bra, this.sta, this.brl, this.sta, this.sty, this.sta, this.stx, this.sta, this.dey, this.biti,this.txa, this.phb, this.sty, this.sta, this.stx, this.sta,
@@ -1641,7 +1638,7 @@ Cpu = (function() {
       this.ldy, this.lda, this.ldx, this.lda, this.ldy, this.lda, this.ldx, this.lda, this.tay, this.lda, this.tax, this.plb, this.ldy, this.lda, this.ldx, this.lda,
       this.bcs, this.lda, this.lda, this.lda, this.ldy, this.lda, this.ldx, this.lda, this.clv, this.lda, this.tsx, this.tyx, this.ldy, this.lda, this.ldx, this.lda,
       this.cpy, this.cmp, this.rep, this.cmp, this.cpy, this.cmp, this.dec, this.cmp, this.iny, this.cmp, this.dex, this.wai, this.cpy, this.cmp, this.dec, this.cmp,
-      this.bne, this.cmp, this.cmp, this.cmp, this.pei, this.cmp, this.dec, this.cmp, this.cld, this.cmp, this.phx, this.stp, this.jmp, this.cmp, this.dec, this.cmp,
+      this.bne, this.cmp, this.cmp, this.cmp, this.pei, this.cmp, this.dec, this.cmp, this.cld, this.cmp, this.phx, this.stp, this.jml, this.cmp, this.dec, this.cmp,
       this.cpx, this.sbc, this.sep, this.sbc, this.cpx, this.sbc, this.inc, this.sbc, this.inx, this.sbc, this.nop, this.xba, this.cpx, this.sbc, this.inc, this.sbc,
       this.beq, this.sbc, this.sbc, this.sbc, this.pea, this.sbc, this.inc, this.sbc, this.sed, this.sbc, this.plx, this.xce, this.jsr, this.sbc, this.inc, this.sbc,
       this.abo, this.nmi, this.irq // abo, nmi, irq
