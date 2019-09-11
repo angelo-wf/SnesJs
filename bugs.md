@@ -1,7 +1,7 @@
 
 This is a list of all the games that I have tested and notes the bugs for each one.
 
-The following games seem to run without any obvious bugs. Note that I haven't played each one to completion, but the first few minutes of gameplay showed no problems (except not having sound, of course).
+The following games seem to run without any obvious bugs within the first few minutes of gameplay (except not having sound, of course).
 
 - Super Mario World
 - Super Mario All-stars
@@ -41,5 +41,5 @@ The following games, however, have bugs.
 - PPUBusActivity (rev. 2) (from [here](https://forums.nesdev.com/viewtopic.php?t=14467)):
   - Mosaic when booting doesn't show up properly for the mode 5 and 6-areas.
   - Offset-per-tile is wrong for the mode 6-area (is static, should be waving like the mode 2-area).
-- Op Timing Test (v2) (from [here](https://forums.nesdev.com/viewtopic.php?f=12&t=18658&start=105)):
+- Op Timing Test (v2) by Sour (from [here](https://forums.nesdev.com/viewtopic.php?f=12&t=18658&start=105)):
   - Loops the first 6 tests over and over (should go from 'absolute store' to 'absolute long', but it goes back to 'absolute').

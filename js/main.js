@@ -138,11 +138,13 @@ function runFrame() {
   if(logging) {
     do {
       snes.cycle();
-      if((snes.xPos % 20) === 0 && snes.apu.spc.cyclesLeft === 0) {
-        log(getSpcTrace(
-          snes.apu.spc, snes.apu.cycles
-        ));
-      }
+      // TODO: some way of tracing the spc again
+      
+      // if((snes.xPos % 20) === 0 && snes.apu.spc.cyclesLeft === 0) {
+      //   log(getSpcTrace(
+      //     snes.apu.spc, snes.apu.cycles
+      //   ));
+      // }
     } while(
       snes.cpuCyclesLeft > 0 ||
       (snes.xPos >= 536 && snes.xPos < 576) ||

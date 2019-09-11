@@ -31,10 +31,11 @@ function getFlags(cpu) {
 }
 
 function getDisassembly(cpu) {
-  let op = cpu.mem.read((cpu.r[1] << 16) | cpu.br[4]);
-  let p1 = cpu.mem.read((cpu.r[1] << 16) | ((cpu.br[4] + 1) & 0xffff));
-  let p2 = cpu.mem.read((cpu.r[1] << 16) | ((cpu.br[4] + 2) & 0xffff));
-  let p3 = cpu.mem.read((cpu.r[1] << 16) | ((cpu.br[4] + 3) & 0xffff));
+  // TODO: side effects of reading
+  let op = cpu.mem.read((cpu.r[1] << 16) | cpu.br[4], true);
+  let p1 = cpu.mem.read((cpu.r[1] << 16) | ((cpu.br[4] + 1) & 0xffff), true);
+  let p2 = cpu.mem.read((cpu.r[1] << 16) | ((cpu.br[4] + 2) & 0xffff), true);
+  let p3 = cpu.mem.read((cpu.r[1] << 16) | ((cpu.br[4] + 3) & 0xffff), true);
   let wo = (p2 << 8) | p1;
   let lo = (p3 << 16) | wo;
 

@@ -24,6 +24,8 @@ function Snes() {
 
   this.dmaOffLengths = [1, 2, 2, 4, 4, 4, 2, 4];
 
+  this.apuCyclesPerMaster = (32040 * 32) / (1364 * 262 * 60)
+
   // for dma
   this.dmaBadr = new Uint8Array(8);
   this.dmaAadr = new Uint16Array(8);
@@ -58,6 +60,7 @@ function Snes() {
 
     this.cpuCyclesLeft = 5 * 8 + 12; // reset: 5 read cycles + 2 IO cycles
     this.cpuMemOps = 0;
+    this.apuCatchCycles = 0;
 
     // for cpu-ports
     this.ramAdr = 0;
@@ -122,6 +125,8 @@ function Snes() {
 
   this.cycle = function() {
 
+    this.apuCatchCycles += (this.apuCyclesPerMaster * 2);
+
     if(this.joypadStrobe) {
       this.joypad1Val = this.joypad1State;
       this.joypad2Val = this.joypad2State;
@@ -168,6 +173,8 @@ function Snes() {
     } else if(this.xPos === 0) {
       // end of hblank
       this.inHblank = false;
+    } else if(this.xPos === 512) {
+      // render line at cycle 512 for better support
       this.ppu.renderLine(this.yPos);
     }
 
@@ -197,12 +204,6 @@ function Snes() {
       }
     }
 
-    // TODO: get better approximation for spc speed
-    // this makes it run at 1068960 Hz
-    if(this.xPos % 20 === 0) {
-      this.apu.cycle();
-    }
-
     // TODO: in non-intelace mode, line 240 on every odd frame is 1360 cycles
     // and in interlace mode, every even frame is 263 lines
     this.xPos += 2;
@@ -210,6 +211,8 @@ function Snes() {
       this.xPos = 0;
       this.yPos++;
       if(this.yPos === 262) {
+        // when finishing a frame, also catch up the apu
+        this.catchUpApu();
         this.yPos = 0;
         this.frames++;
       }
@@ -221,11 +224,17 @@ function Snes() {
       this.cpu.cyclesLeft = 0;
       this.cpuMemOps = 0;
       this.cpu.cycle();
-      // TODO: proper memory cycle timings, do all as 6 now,
-      // to somewhat approximate correct timing for mem ops
       this.cpuCyclesLeft += (this.cpu.cyclesLeft + 1 - this.cpuMemOps) * 6;
     }
     this.cpuCyclesLeft -= 2;
+  }
+
+  this.catchUpApu = function() {
+    let catchUpCycles = this.apuCatchCycles & 0xffffffff;
+    for(let i = 0; i < catchUpCycles; i++) {
+      this.apu.cycle();
+    }
+    this.apuCatchCycles -= catchUpCycles;
   }
 
   this.runFrame = function() {
@@ -277,12 +286,12 @@ function Snes() {
         (this.dmaAadrBank[i] << 16) | this.dmaAadr[i],
         this.readBBus(
           (this.dmaBadr[i] + this.dmaOffs[tableOff]) & 0xff
-        )
+        ), true
       );
     } else {
       this.writeBBus(
         (this.dmaBadr[i] + this.dmaOffs[tableOff]) & 0xff,
-        this.read((this.dmaAadrBank[i] << 16) | this.dmaAadr[i])
+        this.read((this.dmaAadrBank[i] << 16) | this.dmaAadr[i], true)
       );
     }
     this.dmaTimer += 6;
@@ -312,15 +321,15 @@ function Snes() {
 
         this.hdmaTableAdr[i] = this.dmaAadr[i];
         this.hdmaRepCount[i] = this.read(
-          (this.dmaAadrBank[i] << 16) | this.hdmaTableAdr[i]++
+          (this.dmaAadrBank[i] << 16) | this.hdmaTableAdr[i]++, true
         );
         this.hdmaTimer += 8;
         if(this.hdmaInd[i]) {
           this.dmaSize[i] = this.read(
-            (this.dmaAadrBank[i] << 16) | this.hdmaTableAdr[i]++
+            (this.dmaAadrBank[i] << 16) | this.hdmaTableAdr[i]++, true
           );
           this.dmaSize[i] |= this.read(
-            (this.dmaAadrBank[i] << 16) | this.hdmaTableAdr[i]++
+            (this.dmaAadrBank[i] << 16) | this.hdmaTableAdr[i]++, true
           ) << 8;
           this.hdmaTimer += 16;
         }
@@ -349,12 +358,12 @@ function Snes() {
                   (this.hdmaIndBank[i] << 16) | this.dmaSize[i],
                   this.readBBus(
                     (this.dmaBadr[i] + this.dmaOffs[tableOff]) & 0xff
-                  )
+                  ), true
                 );
               } else {
                 this.writeBBus(
                   (this.dmaBadr[i] + this.dmaOffs[tableOff]) & 0xff,
-                  this.read((this.hdmaIndBank[i] << 16) | this.dmaSize[i])
+                  this.read((this.hdmaIndBank[i] << 16) | this.dmaSize[i], true)
                 );
               }
               this.dmaSize[i]++
@@ -364,12 +373,14 @@ function Snes() {
                   (this.dmaAadrBank[i] << 16) | this.hdmaTableAdr[i],
                   this.readBBus(
                     (this.dmaBadr[i] + this.dmaOffs[tableOff]) & 0xff
-                  )
+                  ), true
                 );
               } else {
                 this.writeBBus(
                   (this.dmaBadr[i] + this.dmaOffs[tableOff]) & 0xff,
-                  this.read((this.dmaAadrBank[i] << 16) | this.hdmaTableAdr[i])
+                  this.read(
+                    (this.dmaAadrBank[i] << 16) | this.hdmaTableAdr[i], true
+                  )
                 );
               }
               this.hdmaTableAdr[i]++;
@@ -380,14 +391,14 @@ function Snes() {
         this.hdmaDoTransfer[i] = (this.hdmaRepCount[i] & 0x80) > 0;
         if((this.hdmaRepCount[i] & 0x7f) === 0) {
           this.hdmaRepCount[i] = this.read(
-            (this.dmaAadrBank[i] << 16) | this.hdmaTableAdr[i]++
+            (this.dmaAadrBank[i] << 16) | this.hdmaTableAdr[i]++, true
           );
           if(this.hdmaInd[i]) {
             this.dmaSize[i] = this.read(
-              (this.dmaAadrBank[i] << 16) | this.hdmaTableAdr[i]++
+              (this.dmaAadrBank[i] << 16) | this.hdmaTableAdr[i]++, true
             );
             this.dmaSize[i] |= this.read(
-              (this.dmaAadrBank[i] << 16) | this.hdmaTableAdr[i]++
+              (this.dmaAadrBank[i] << 16) | this.hdmaTableAdr[i]++, true
             ) << 8;
             this.hdmaTimer += 16;
           }
@@ -664,6 +675,8 @@ function Snes() {
       return this.ppu.read(adr);
     }
     if(adr >= 0x40 && adr < 0x80) {
+      // catch up the apu, then do the read
+      this.catchUpApu();
       return this.apu.spcWritePorts[adr & 0x3];
     }
     if(adr === 0x80) {
@@ -680,6 +693,8 @@ function Snes() {
       return;
     }
     if(adr >= 0x40 && adr < 0x80) {
+      // catch up the apu, then do the write
+      this.catchUpApu();
       this.apu.spcReadPorts[adr & 0x3] = value;
       return;
     }
@@ -743,13 +758,23 @@ function Snes() {
     return this.cart.read(bank, adr);
   }
 
-  this.read = function(adr) {
+  this.read = function(adr, dma = false) {
+    if(!dma) {
+      this.cpuMemOps++;
+      this.cpuCyclesLeft += this.getAccessTime(adr);
+    }
+
     let val = this.rread(adr);
     this.openBus = val;
     return val;
   }
 
-  this.write = function(adr, value) {
+  this.write = function(adr, value, dma = false) {
+    if(!dma) {
+      this.cpuMemOps++;
+      this.cpuCyclesLeft += this.getAccessTime(adr);
+    }
+
     this.openBus = value;
     adr &= 0xffffff;
     //log("Written $" + getByteRep(value) + " to $" + getLongRep(adr));
@@ -776,6 +801,39 @@ function Snes() {
 
     }
     this.cart.write(bank, adr, value);
+  }
+
+  this.getAccessTime = function(adr) {
+    adr &= 0xffffff;
+    let bank = adr >> 16;
+    adr &= 0xffff;
+    if(bank >= 0x40 && bank < 0x80) {
+      // banks 0x40-0x7f, all slow
+      return 8;
+    }
+    if(bank >= 0xc0) {
+      // banks 0xc0-0xff, depends on speed
+      return this.fastMem ? 6 : 8;
+    }
+    // banks 0x00-0x3f and 0x80-0xbf
+    if(adr < 0x2000) {
+      return 8; // slow
+    }
+    if(adr < 0x4000) {
+      return 6; // fast
+    }
+    if(adr < 0x4200) {
+      return 12; // extra slow
+    }
+    if(adr < 0x6000) {
+      return 6; // fast
+    }
+    if(adr < 0x8000) {
+      return 8; // slow
+    }
+    // 0x8000-0xffff, depends on fastrom setting if in banks 0x80+
+    return (this.fastMem && bank >= 0x80) ? 6 : 8;
+
   }
 
   // getting audio and video out, controllers in

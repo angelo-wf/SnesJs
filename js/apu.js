@@ -22,10 +22,10 @@ function Apu(snes) {
     clearArray(this.spcWritePorts);
     clearArray(this.spcReadPorts);
 
-    this.spc.reset();
-
     this.dspAdr = 0;
     this.dspRomReadable = true;
+
+    this.spc.reset();
 
     this.cycles = 0;
 
