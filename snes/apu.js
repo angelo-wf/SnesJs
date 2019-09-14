@@ -4,6 +4,7 @@ function Apu(snes) {
   this.snes = snes;
 
   this.spc = new Spc(this);
+  this.dsp = new Dsp(this);
 
   this.bootRom = new Uint8Array([
     0xcd, 0xef, 0xbd, 0xe8, 0x00, 0xc6, 0x1d, 0xd0, 0xfc, 0x8f, 0xaa, 0xf4, 0x8f, 0xbb, 0xf5, 0x78,
@@ -26,6 +27,7 @@ function Apu(snes) {
     this.dspRomReadable = true;
 
     this.spc.reset();
+    this.dsp.reset();
 
     this.cycles = 0;
 
@@ -113,9 +115,7 @@ function Apu(snes) {
         return this.dspAdr;
       }
       case 0xf3: {
-        // TODO: read from dsp registers
-        // this.dspAdr & 0x7f;
-        return 0;
+        return this.dsp.read(this.dspAdr & 0x7f);
       }
       case 0xf4:
       case 0xf5:
@@ -178,7 +178,7 @@ function Apu(snes) {
       }
       case 0xf3: {
         if(this.dspAdr < 0x80) {
-          // TODO: write to dsp
+          this.dsp.write(this.dspAdr, value);
         }
         break;
       }
