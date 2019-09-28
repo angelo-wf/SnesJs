@@ -12,7 +12,10 @@ let pausedInBg = false;
 
 let snes = new Snes();
 
+let audioHandler = new AudioHandler();
+
 let logging = false;
+let noPpu = false;
 
 zip.workerScriptsPath = "lib/";
 zip.useWebWorkers = false;
@@ -85,10 +88,12 @@ el("rom").onchange = function(e) {
 el("pause").onclick = function() {
   if(paused && loaded) {
     loopId = requestAnimationFrame(update);
+    audioHandler.start();
     paused = false;
     el("pause").textContent = "Pause";
   } else {
     cancelAnimationFrame(loopId);
+    audioHandler.stop();
     paused = true;
     el("pause").textContent = "Continue";
   }
@@ -128,6 +133,7 @@ function loadRom(rom) {
     snes.reset(true);
     if(!loaded && !paused) {
       loopId = requestAnimationFrame(update);
+      audioHandler.start();
     }
     loaded = true;
   }
@@ -139,7 +145,7 @@ function runFrame() {
     do {
       snes.cycle();
       // TODO: some way of tracing the spc again
-      
+
       // if((snes.xPos % 20) === 0 && snes.apu.spc.cyclesLeft === 0) {
       //   log(getSpcTrace(
       //     snes.apu.spc, snes.apu.cycles
@@ -154,7 +160,7 @@ function runFrame() {
       snes.cpu, snes.frames * 1364 * 262 + snes.yPos * 1364 + snes.xPos
     ));
   } else {
-    snes.runFrame();
+    snes.runFrame(noPpu);
     // do {
     //   snes.cycle();
     //   if(snes.cpu.br[4] === 0x94a6) {
@@ -167,6 +173,8 @@ function runFrame() {
 
   snes.setPixels(imgData.data);
   ctx.putImageData(imgData, 0, 0);
+  snes.setSamples(audioHandler.sampleBufferL, audioHandler.sampleBufferR);
+  audioHandler.nextBuffer();
 }
 
 function update() {
@@ -179,6 +187,12 @@ window.onkeydown = function(e) {
     case "l":
     case "L": {
       logging = !logging;
+      break;
+    }
+    case "p":
+    case "P": {
+      noPpu = !noPpu;
+      break;
     }
   }
   if(controlsP1[e.key.toLowerCase()] !== undefined) {

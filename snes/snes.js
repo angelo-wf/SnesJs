@@ -123,7 +123,7 @@ function Snes() {
 
   // cycle functions
 
-  this.cycle = function() {
+  this.cycle = function(noPpu) {
 
     this.apuCatchCycles += (this.apuCyclesPerMaster * 2);
 
@@ -173,7 +173,7 @@ function Snes() {
     } else if(this.xPos === 0) {
       // end of hblank
       this.inHblank = false;
-    } else if(this.xPos === 512) {
+    } else if(this.xPos === 512 && !noPpu) {
       // render line at cycle 512 for better support
       this.ppu.renderLine(this.yPos);
     }
@@ -237,10 +237,11 @@ function Snes() {
     this.apuCatchCycles -= catchUpCycles;
   }
 
-  this.runFrame = function() {
+  this.runFrame = function(noPpu) {
     do {
-      this.cycle();
+      this.cycle(noPpu);
     } while(!(this.xPos === 0 && this.yPos === 0));
+    //log("apu position: " + this.apu.dsp.sampleOffset);
   }
 
   this.doAutoJoyRead = function() {
@@ -840,6 +841,17 @@ function Snes() {
 
   this.setPixels = function(arr) {
     this.ppu.setPixels(arr);
+  }
+
+  this.setSamples = function(left, right) {
+    let add = 534 / 735;
+    let total = 0;
+    for(let i = 0; i < 735; i++) {
+      left[i] = this.apu.dsp.samplesL[total & 0xffff];
+      right[i] = this.apu.dsp.samplesR[total & 0xffff];
+      total += add;
+    }
+    this.apu.dsp.sampleOffset = 0;
   }
 
   this.setPad1ButtonPressed = function(num) {

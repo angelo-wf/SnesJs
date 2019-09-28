@@ -53,6 +53,11 @@ function Apu(snes) {
   this.cycle = function() {
     this.spc.cycle();
 
+    if((this.cycles & 0x1f) === 0) {
+      // every 32 cycles
+      this.dsp.cycle();
+    }
+
     // run the timers
     if(this.timer1int === 0) {
       this.timer1int = 128;

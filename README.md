@@ -15,7 +15,7 @@ DMA, HDMA and the other misc. features are supported, but not cycle-accurate.
 
 The SPC700 audio CPU is emulated, but is not cycle accurate, and does not run at the right speed yet.
 
-The DSP (audio generation unit) is not emulated yet (only the basic 'values written can be read back').
+The DSP (audio generation unit) is not really emulated yet (only the basic 'values written can be read back' and 'it plays a sine(ish) wave for each channel at the pitch set by the SPC').
 
 Although some games seem to run fine, quite a few games are not emulated properly. The file `bugs.md` contains a list of games that have been tested and the problems they have. Apart from some known problems with the PPU and missing edge cases for (H)DMA and timing, there also seems to be a problem with the CPU emulation itself. I don't know yet what this problem is, exactly.
 
@@ -42,7 +42,8 @@ Controller 1 and 2 are emulated as plugged in, but only controller 1 has control
 | L           | D               |
 | R           | C               |
 
-Pressing L will toggle 'log-mode', where it runs a single CPU-instruction each frame and logs it in trace-log format.
+- Pressing L will toggle 'log-mode', where it runs a single CPU-instruction each frame and logs it in trace-log format.
+- Pressing P will toggle 'no-PPU mode', where it will not emulate the PPU rendering. This allows it to run at full speed, and makes working on the DSP easier.
 
 ## Usage
 
