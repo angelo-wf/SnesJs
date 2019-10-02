@@ -1,5 +1,5 @@
-
-This is a list of all the games that I have tested and notes the bugs for each one.
+# List of tested games and bugs
+This is a list of all the games that I have tested and it notes the bugs for each one.
 
 The following games seem to run without any obvious bugs within the first few minutes of gameplay (except not having sound, of course).
 

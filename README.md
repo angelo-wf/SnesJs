@@ -47,9 +47,9 @@ Controller 1 and 2 are emulated as plugged in, but only controller 1 has control
 
 ## Usage
 
-Can be used online [here](https://elzo-d.github.io/SnesJs/).
+The emulator can be used online [here](https://elzo-d.github.io/SnesJs/).
 
-To run offline:
+To run the emulator offline:
 - Clone this repository.
 - Open `index.js` in a browser. Messing around with the browser's autoplay policy might be required.
 
