@@ -29,7 +29,7 @@ function Dsp(apu) {
     this.old = [0, 0, 0, 0, 0, 0, 0, 0];
     this.older = [0, 0, 0, 0, 0, 0, 0, 0];
 
-    // temprary: 0 or 1
+    // temporary: 0 or 1
     this.gain = [0, 0, 0, 0, 0, 0, 0, 0];
 
     this.sampleOut = [0, 0, 0, 0, 0, 0, 0, 0];

@@ -5,7 +5,7 @@ Try it online [here](https://elzo-d.github.io/SnesJs/).
 
 ## About
 
-This is my attempt at making a SNES emulator in Javascript. It is currently able to run some of the earlier games in the library, but without sound, and (at least on a 5th gen Core i5) not at full speed.
+This is my attempt at making a SNES emulator in Javascript. It is currently able to run some of the earlier games in the library, but without proper sound, and (at least on a 5th gen Core i5) not at full speed.
 
 The 65816 CPU is fully functional, but emulation mode is not supported. It is also not cycle-accurate.
 
@@ -13,9 +13,9 @@ The PPU is able to render most things fine. There are some issues with color mat
 
 DMA, HDMA and the other misc. features are supported, but not cycle-accurate.
 
-The SPC700 audio CPU is emulated, but is not cycle accurate, and does not run at the right speed yet.
+The SPC700 audio CPU is emulated, but is not cycle accurate.
 
-The DSP (audio generation unit) is not really emulated yet (only the basic 'values written can be read back' and 'it plays a sine(ish) wave for each channel at the pitch set by the SPC').
+The DSP (audio generation unit) is not really emulated yet (only the basic 'values written can be read back' and 'it attempt to play BRR-samples but fails miserably').
 
 Although some games seem to run fine, quite a few games are not emulated properly. The file `bugs.md` contains a list of games that have been tested and the problems they have. Apart from some known problems with the PPU and missing edge cases for (H)DMA and timing, there also seems to be a problem with the CPU emulation itself. I don't know yet what this problem is, exactly.
 
@@ -64,8 +64,12 @@ Resources that I used for implementing this:
 - The in-progress [SnesDev Wiki](https://snesdev.mesen.ca/wiki/index.php?title=Main_Page) by [Sour](https://github.com/SourMesen).
 - Some quick peeks at Sour's [Mesen-S source](https://github.com/SourMesen/Mesen-S).
 - The [nocach fullsnes document](https://problemkaputt.de/fullsnes.txt).
-- Some posts in the [SnesDev section](https://forums.nesdev.com/viewforum.php?f=12) of the NesDev forums.
+- Some posts and resources in the [SnesDev section](https://forums.nesdev.com/viewforum.php?f=12) of the NesDev forums.
 - The [Super NES Programming pages](https://en.wikibooks.org/wiki/Super_NES_Programming) in Wikibooks.
 - Various roms (especially the CPU tests) by PeterLemon found [here](https://github.com/PeterLemon/SNES).
 - Some of the wrapper code is based on my [NES emulator](https://github.com/elzo-d/NesJs).
 - The [zip.js](https://gildas-lormeau.github.io/zip.js/) library is used for zipped rom loading support.
+
+## License
+
+Licensed under the MIT License. See `LICENSE.txt` for details.

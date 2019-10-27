@@ -1,7 +1,7 @@
 # List of tested games and bugs
 This is a list of all the games that I have tested and it notes the bugs for each one.
 
-The following games seem to run without any obvious bugs within the first few minutes of gameplay (except not having sound, of course).
+The following games seem to run without any obvious bugs within the first few minutes of gameplay (except not having proper sound, of course).
 
 - Super Mario World
 - Super Mario All-stars
@@ -14,7 +14,7 @@ The following games seem to run without any obvious bugs within the first few mi
 - R.P.M. Racing
 - Tetris & Dr. Mario
 - Most of PeterLemon's roms from [here](https://github.com/PeterLemon/SNES)
-  - Except the ones marked below and the ones that use expansion chips.
+  - Except the ones marked below and the ones that use expansion chips or are sound-based.
 
 The following games, however, have bugs.
 
@@ -43,3 +43,6 @@ The following games, however, have bugs.
   - Offset-per-tile is wrong for the mode 6-area (is static, should be waving like the mode 2-area).
 - Op Timing Test (v2) by Sour (from [here](https://forums.nesdev.com/viewtopic.php?f=12&t=18658&start=105)):
   - Loops the first 6 tests over and over (should go from 'absolute store' to 'absolute long', but it goes back to 'absolute').
+- Blargg's SPC tests (from [here](https://forums.nesdev.com/viewtopic.php?f=12&t=18005)):
+  - These seem to be oddly sized, but resizing them to a multiple of 0x8000 bytes makes them boot.
+  - spc_smp: fails, the hashes start diverging at 0x84.
