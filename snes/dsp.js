@@ -55,9 +55,6 @@ function Dsp(apu) {
       this.sampleOut[7] * this.gain[7]
     ) / 8;
     // total is in range -0x4000 - 0x3fff
-    if((total & 0x4000) > 0) {
-      total = -(0x8000 - total);
-    }
     this.samplesL[this.sampleOffset] = total / 0x4000;
     this.samplesR[this.sampleOffset] = total / 0x4000;
 
@@ -91,15 +88,15 @@ function Dsp(apu) {
         this.decodeOffset[ch] &= 0xffff;
         s = byte >> 4;
       }
+      s = s > 7 ? s - 16 : s;
       s = (s << shift) >> 1;
-      //s = this.get15asSigned(s);
       s = (
         s +
         (this.old[ch] * this.oldMult[filter]) +
         (this.older[ch] * this.olderMult[filter])
       );
-      //s = s < -0x4000 ? -0x4000 : s;
-      //s = s > 0x3fff ? 0x3fff : s;
+      s = s < -0x4000 ? -0x4000 : s;
+      s = s > 0x3fff ? 0x3fff : s;
       this.older[ch] = this.old[ch];
       this.old[ch] = s;
       this.decodeBuffer[ch * 16 + i] = s;

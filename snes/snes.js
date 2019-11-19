@@ -913,7 +913,7 @@ function Snes() {
       romSize: 0x400 << rom[0x7fd7],
       ramSize: 0x400 << rom[0x7fd8]
     };
-    if(header.romSize < 0x8000) {
+    if(header.romSize < rom.length) {
       // probably wrong header?
       // seems to help with snes test program and such
       let bankCount = Math.pow(2, Math.ceil(Math.log2(rom.length / 0x8000)));

@@ -13,6 +13,7 @@ The following games seem to run without any obvious bugs within the first few mi
 - Super Ghouls'n Ghosts
 - R.P.M. Racing
 - Tetris & Dr. Mario
+- Lufia II
 - Most of PeterLemon's roms from [here](https://github.com/PeterLemon/SNES)
   - Except the ones marked below and the ones that use expansion chips or are sound-based.
 
@@ -26,9 +27,12 @@ The following games, however, have bugs.
   - Freezes on the 'Seta presents' screen, waiting on the SPC.
 - Jurassic Park
   - Doesn't blank the left and right sides of the screen properly for the visible sub-screen pixels.
+- Sparkster
+  - Sometimes seems to render incorrect tiles to the screen and has the camera behaving oddly.
+  - [bug #2](https://github.com/elzo-d/SnesJs/issues/2): This might lead to wall-clipping as well.
 - Snes Burn-in Test (Rev. D)
   - Controller test doesn't color the background blue properly when it passes.
-  - Sound module test gives error 76 (expected because there is no DSP emulation yet).
+  - Sound module test gives error 76 (expected because there is no proper DSP emulation yet).
   - Burn-in test doesn't start, seems to be waiting on the SPC (might be different, seems like it tries to upload some data again after already having uploaded a program to the SPC).
 - Snes Test Program
   - Controller test doesn't color the background blue properly when it passes.
@@ -42,7 +46,7 @@ The following games, however, have bugs.
   - Mosaic when booting doesn't show up properly for the mode 5 and 6-areas.
   - Offset-per-tile is wrong for the mode 6-area (is static, should be waving like the mode 2-area).
 - Op Timing Test (v2) by Sour (from [here](https://forums.nesdev.com/viewtopic.php?f=12&t=18658&start=105)):
-  - Loops the first 6 tests over and over (should go from 'absolute store' to 'absolute long', but it goes back to 'absolute').
+  - Timings are all somewhat off.
 - Blargg's SPC tests (from [here](https://forums.nesdev.com/viewtopic.php?f=12&t=18005)):
   - These seem to be oddly sized, but resizing them to a multiple of 0x8000 bytes makes them boot.
   - spc_smp: fails, the hashes start diverging at 0x84.

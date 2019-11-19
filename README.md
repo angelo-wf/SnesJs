@@ -17,7 +17,7 @@ The SPC700 audio CPU is emulated, but is not cycle accurate.
 
 The DSP (audio generation unit) is not really emulated yet (only the basic 'values written can be read back' and 'it attempt to play BRR-samples but fails miserably').
 
-Although some games seem to run fine, quite a few games are not emulated properly. The file `bugs.md` contains a list of games that have been tested and the problems they have. Apart from some known problems with the PPU and missing edge cases for (H)DMA and timing, there also seems to be a problem with the CPU emulation itself. I don't know yet what this problem is, exactly.
+Although some games seem to run fine, quite a few games are not emulated properly. The file `bugs.md` contains a list of games that have been tested and the problems they have. Most of these bugs are probably caused by some known problems with the PPU and missing edge cases for (H)DMA and timing.
 
 It can currently only load LOROM games.
 
