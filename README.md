@@ -59,7 +59,7 @@ Resources that I used for implementing this:
 
 - The WDC datasheet for the W65C816S cpu.
 - The [65C816 opcodes tutorial](http://6502.org/tutorials/65c816opcodes.html) from 6502.org.
-- The [65816 opcode matrix](http://www.oxyron.de/html/opcodes816.html) from oxyron.de (the cycle timing and notes there aren't fully accurate).
+- The [65816 opcode matrix](http://www.oxyron.de/html/opcodes816.html) from oxyron.de (the cycle timing and notes there aren't fully accurate, and the addressing modes IAL and IAX are swapped for JMP (opcodes $7C and $EC)).
 - The [SuperFamicon wiki](https://wiki.superfamicom.org).
 - The in-progress [SnesDev Wiki](https://snesdev.mesen.ca/wiki/index.php?title=Main_Page) by [Sour](https://github.com/SourMesen).
 - Some quick peeks at Sour's [Mesen-S source](https://github.com/SourMesen/Mesen-S).
@@ -67,6 +67,7 @@ Resources that I used for implementing this:
 - Some posts and resources in the [SnesDev section](https://forums.nesdev.com/viewforum.php?f=12) of the NesDev forums.
 - The [Super NES Programming pages](https://en.wikibooks.org/wiki/Super_NES_Programming) in Wikibooks.
 - Various roms (especially the CPU tests) by PeterLemon found [here](https://github.com/PeterLemon/SNES).
+- The source for the BRR-tools from [SMW central](https://www.smwcentral.net), found [here](https://github.com/jimbo1qaz/BRRtools/tree/32-bit-samples).
 - Some of the wrapper code is based on my [NES emulator](https://github.com/elzo-d/NesJs).
 - The [zip.js](https://gildas-lormeau.github.io/zip.js/) library is used for zipped rom loading support.
 

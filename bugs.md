@@ -35,8 +35,9 @@ The following games, however, have bugs.
   - Sound module test gives error 76 (expected because there is no proper DSP emulation yet).
   - Burn-in test doesn't start, seems to be waiting on the SPC (might be different, seems like it tries to upload some data again after already having uploaded a program to the SPC).
 - Snes Test Program
+  - Input on the menu screen acts weird, looks like it's not always reading it properly.
   - Controller test doesn't color the background blue properly when it passes.
-  - Electronics test freezes on a black screen (doesn't seem SPC related, though)
+  - Electronics test freezes on a black screen (doesn't seem SPC related, though).
 - PeterLemon's roms (from [here](https://github.com/PeterLemon/SNES)):
   - CPUTest/CPU/MSC: Freezes on a black screen when resetting for the STP-test (the PPU should not be reset when resetting the SNES).
   - Games/MonsterFarmHunter: Doesn't work properly when going in-game. A small row of white pixels near the top of the screen moves when pressing left or right (in the opposite direction), but nothing else works.

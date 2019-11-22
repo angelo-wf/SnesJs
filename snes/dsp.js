@@ -12,7 +12,7 @@ function Dsp(apu) {
   this.oldMult = [0, 0.9375, 1.90625, 1.796875];
   this.olderMult = [0, 0, 0.9375, 0.8125];
 
-  this.decodeBuffer = new Uint16Array(16*8);
+  this.decodeBuffer = new Int16Array(16*8);
 
   this.reset = function() {
     clearArray(this.ram);
@@ -89,14 +89,16 @@ function Dsp(apu) {
         s = byte >> 4;
       }
       s = s > 7 ? s - 16 : s;
-      s = (s << shift) >> 1;
-      s = (
-        s +
-        (this.old[ch] * this.oldMult[filter]) +
-        (this.older[ch] * this.olderMult[filter])
-      );
-      s = s < -0x4000 ? -0x4000 : s;
-      s = s > 0x3fff ? 0x3fff : s;
+      if(shift < 0xc) {
+        s = (s << shift) >> 1;
+      } else {
+        s = s < 0 ? -2048 : 2048;
+      }
+      s += this.old[ch] * this.oldMult[filter] - this.older[ch] * this.olderMult[filter];
+      s = s > 0x7fff ? 0x7fff : s;
+      s = s < -0x8000 ? -0x8000 : s;
+      s = s > 0x3fff ? s - 0x8000 : s;
+      s = s < -0x4000 ? s + 0x8000 : s;
       this.older[ch] = this.old[ch];
       this.old[ch] = s;
       this.decodeBuffer[ch * 16 + i] = s;
@@ -113,6 +115,7 @@ function Dsp(apu) {
   this.cycleChannel = function(ch) {
     // get the next sample
     this.counter[ch] += this.pitch[ch];
+    //this.counter[ch] += 0x1000;
     if(this.counter[ch] > 0xffff) {
       // decode next brr sample
       this.decodeBrr(ch);
