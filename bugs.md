@@ -38,6 +38,7 @@ The following games, however, have bugs.
   - Input on the menu screen acts weird, looks like it's not always reading it properly.
   - Controller test doesn't color the background blue properly when it passes.
   - Electronics test freezes on a black screen (doesn't seem SPC related, though).
+  - Color test show a wrong scanline near the bottom of the screen during the full-color screens.
 - PeterLemon's roms (from [here](https://github.com/PeterLemon/SNES)):
   - CPUTest/CPU/MSC: Freezes on a black screen when resetting for the STP-test (the PPU should not be reset when resetting the SNES).
   - Games/MonsterFarmHunter: Doesn't work properly when going in-game. A small row of white pixels near the top of the screen moves when pressing left or right (in the opposite direction), but nothing else works.

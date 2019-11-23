@@ -20,7 +20,6 @@ function Dsp(apu) {
     clearArray(this.decodeBuffer);
 
     this.pitch = [0, 0, 0, 0, 0, 0, 0, 0];
-    // this.pitch = [0x1000, 0x1000, 0x1000, 0x1000, 0x1000, 0x1000, 0x1000, 0x1000];
     this.counter = [0, 0, 0, 0, 0, 0, 0, 0];
 
     this.srcn = [0, 0, 0, 0, 0, 0, 0, 0];
@@ -32,7 +31,11 @@ function Dsp(apu) {
     // temporary: 0 or 1
     this.gain = [0, 0, 0, 0, 0, 0, 0, 0];
 
-    this.sampleOut = [0, 0, 0, 0, 0, 0, 0, 0];
+    this.channelVolumeL = [0, 0, 0, 0, 0, 0, 0, 0];
+    this.channelVolumeR = [0, 0, 0, 0, 0, 0, 0, 0];
+
+    this.sampleOutL = [0, 0, 0, 0, 0, 0, 0, 0];
+    this.sampleOutR = [0, 0, 0, 0, 0, 0, 0, 0];
 
     this.dirPage = 0;
   }
@@ -40,23 +43,18 @@ function Dsp(apu) {
 
   this.cycle = function() {
 
+    let totalL = 0;
+    let totalR = 0;
     for(let i = 0; i < 8; i++) {
       this.cycleChannel(i);
+      totalL += this.sampleOutL[i];
+      totalR += this.sampleOutR[i];
     }
+    totalL /= 8;
+    totalR /= 8;
 
-    let total = (
-      this.sampleOut[0] * this.gain[0] +
-      this.sampleOut[1] * this.gain[1] +
-      this.sampleOut[2] * this.gain[2] +
-      this.sampleOut[3] * this.gain[3] +
-      this.sampleOut[4] * this.gain[4] +
-      this.sampleOut[5] * this.gain[5] +
-      this.sampleOut[6] * this.gain[6] +
-      this.sampleOut[7] * this.gain[7]
-    ) / 8;
-    // total is in range -0x4000 - 0x3fff
-    this.samplesL[this.sampleOffset] = total / 0x4000;
-    this.samplesR[this.sampleOffset] = total / 0x4000;
+    this.samplesL[this.sampleOffset] = totalL / 0x4000;
+    this.samplesR[this.sampleOffset] = totalR / 0x4000;
 
     this.sampleOffset++;
     if(this.sampleOffset > 533) {
@@ -124,7 +122,8 @@ function Dsp(apu) {
     let sampleNum = this.counter[ch] >> 12;
     // get the sample out the decode buffer
     let sample = this.decodeBuffer[ch * 16 + sampleNum];
-    this.sampleOut[ch] = sample;
+    this.sampleOutL[ch] = sample * this.gain[ch] * this.channelVolumeL[ch];
+    this.sampleOutR[ch] = sample * this.gain[ch] * this.channelVolumeR[ch];
   }
 
   this.read = function(adr) {
@@ -134,6 +133,28 @@ function Dsp(apu) {
   this.write = function(adr, value) {
     let channel = (adr & 0x70) >> 4;
     switch(adr) {
+      case 0x0:
+      case 0x10:
+      case 0x20:
+      case 0x30:
+      case 0x40:
+      case 0x50:
+      case 0x60:
+      case 0x70: {
+        this.channelVolumeL[channel] = (value > 0x7f ? value - 0x100 : value) / 0x80;
+        break;
+      }
+      case 0x1:
+      case 0x11:
+      case 0x21:
+      case 0x31:
+      case 0x41:
+      case 0x51:
+      case 0x61:
+      case 0x71: {
+        this.channelVolumeR[channel] = (value > 0x7f ? value - 0x100 : value) / 0x80;
+        break;
+      }
       case 0x2:
       case 0x12:
       case 0x22:
@@ -155,7 +176,7 @@ function Dsp(apu) {
       case 0x63:
       case 0x73: {
         this.pitch[channel] &= 0xff;
-        this.pitch[channel] |= (value << 8) & 0x3f;
+        this.pitch[channel] |= (value << 8) & 0x3f00;
         break;
       }
       case 0x4:
