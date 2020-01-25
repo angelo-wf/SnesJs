@@ -52,4 +52,4 @@ The following games, however, have bugs.
   - Timings are all somewhat off.
 - Blargg's SPC tests (from [here](https://forums.nesdev.com/viewtopic.php?f=12&t=18005)):
   - These seem to be oddly sized, but resizing them to a multiple of 0x8000 bytes makes them boot.
-  - spc_smp: fails on CPU Instructions/Full BRK - 'E6 10 89AD 00 EE / E6 FB 89AD FF EE / CDCE049A / Failed 02'
+  - spc_smp: fails on CPU Timing/mem access times (expected because it is not cycle accurate).

@@ -886,9 +886,8 @@ Spc = (function() {
     }
 
     this.brk = function(adr, adrh, instr) {
-      let pushPc = (this.br[PC] + 1) & 0xffff;
-      this.push(pushPc >> 8);
-      this.push(pushPc & 0xff);
+      this.push(this.br[PC] >> 8);
+      this.push(this.br[PC] & 0xff);
       this.push(this.getP());
       this.i = false;
       this.b = true;
