@@ -3,6 +3,14 @@ A SNES emulator, in javascript
 
 Try it online [here](https://elzo-d.github.io/SnesJs/).
 
+## Note
+
+I am not sure how much further I want to go with this emulator.
+
+Although it is a nice proof of concept, not being able to run at full speed (on my hardware) makes working on it quite annoying. I originally started it because my Javascript NES emulator ([here](https://github.com/elzo-d/NesJs)) ran full speed (on my hardware) quite easily, even though it it not really optimized at all. This made me think emulating the SNES full speed might be possible as well. This however does not seem to be the case.
+
+Additionally, I am not sure how to debug and fix certain issues. Also, some (most?) of the issues are probably because of it not being cycle accurate, and trying to make it cycle accurate would most likely make it even slower. I am still thinking about at least finishing up the DSP somewhat (so games actually sound somewhat proper instead of what they sound like now), and maybe trying to fix some of the bigger bugs.
+
 ## About
 
 This is my attempt at making a SNES emulator in Javascript. It is currently able to run some of the earlier games in the library, but without proper sound, and (at least on a 5th gen Core i5) not at full speed.
@@ -61,8 +69,9 @@ Resources that I used for implementing this:
 - The [65C816 opcodes tutorial](http://6502.org/tutorials/65c816opcodes.html) from 6502.org.
 - The [65816 opcode matrix](http://www.oxyron.de/html/opcodes816.html) from oxyron.de (the cycle timing and notes there aren't fully accurate, and the addressing modes IAL and IAX are swapped for JMP (opcodes $7C and $EC)).
 - The [SuperFamicon wiki](https://wiki.superfamicom.org).
-- The in-progress [SnesDev Wiki](https://snesdev.mesen.ca/wiki/index.php?title=Main_Page) by [Sour](https://github.com/SourMesen).
+- The in-progress(?) [SnesDev Wiki](https://snesdev.mesen.ca/wiki/index.php?title=Main_Page) by Sour.
 - Some quick peeks at Sour's [Mesen-S source](https://github.com/SourMesen/Mesen-S).
+- Some quick peeks at Byuu's [Higan source](https://github.com/byuu/higan).
 - The [nocach fullsnes document](https://problemkaputt.de/fullsnes.txt).
 - Some posts and resources in the [SnesDev section](https://forums.nesdev.com/viewforum.php?f=12) of the NesDev forums.
 - The [Super NES Programming pages](https://en.wikibooks.org/wiki/Super_NES_Programming) in Wikibooks.

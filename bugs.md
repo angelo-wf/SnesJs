@@ -48,7 +48,8 @@ The following games, however, have bugs.
   - Mosaic when booting doesn't show up properly for the mode 5 and 6-areas.
   - Offset-per-tile is wrong for the mode 6-area (is static, should be waving like the mode 2-area).
 - Op Timing Test (v2) by Sour (from [here](https://forums.nesdev.com/viewtopic.php?f=12&t=18658&start=105)):
+  - Header seems to specify wrong amount of banks, needed to set banks according to ROM size instead of trusting the header.
   - Timings are all somewhat off.
 - Blargg's SPC tests (from [here](https://forums.nesdev.com/viewtopic.php?f=12&t=18005)):
   - These seem to be oddly sized, but resizing them to a multiple of 0x8000 bytes makes them boot.
-  - spc_smp: fails, the hashes start diverging at 0x84.
+  - spc_smp: fails on CPU Instructions/Full BRK - 'E6 10 89AD 00 EE / E6 FB 89AD FF EE / CDCE049A / Failed 02'

@@ -467,12 +467,12 @@ Spc = (function() {
     this.adc = function(adr, adrh, instr) {
       let value = this.mem.read(adr);
       let result = this.r[A] + value + (this.c ? 1 : 0);
-      this.c = result > 0xff;
       this.v = (
         (this.r[A] & 0x80) === (value & 0x80) &&
         (value & 0x80) !== (result & 0x80)
       );
       this.h = ((this.r[A] & 0xf) + (value & 0xf) + (this.c ? 1 : 0)) > 0xf;
+      this.c = result > 0xff;
       this.setZandN(result);
       this.r[A] = result;
     }
@@ -481,12 +481,12 @@ Spc = (function() {
       let value = this.mem.read(adr);
       let addedTo = this.mem.read(adrh);
       let result = addedTo + value + (this.c ? 1 : 0);
-      this.c = result > 0xff;
       this.v = (
         (addedTo & 0x80) === (value & 0x80) &&
         (value & 0x80) !== (result & 0x80)
       );
       this.h = ((addedTo & 0xf) + (value & 0xf) + (this.c ? 1 : 0)) > 0xf;
+      this.c = result > 0xff;
       this.setZandN(result);
       this.mem.write(adrh, result & 0xff);
     }
@@ -494,12 +494,12 @@ Spc = (function() {
     this.sbc = function(adr, adrh, instr) {
       let value = this.mem.read(adr) ^ 0xff;
       let result = this.r[A] + value + (this.c ? 1 : 0);
-      this.c = result > 0xff;
       this.v = (
         (this.r[A] & 0x80) === (value & 0x80) &&
         (value & 0x80) !== (result & 0x80)
       );
       this.h = ((this.r[A] & 0xf) + (value & 0xf) + (this.c ? 1 : 0)) > 0xf;
+      this.c = result > 0xff;
       this.setZandN(result);
       this.r[A] = result;
     }
@@ -508,12 +508,12 @@ Spc = (function() {
       let value = this.mem.read(adr) ^ 0xff;
       let addedTo = this.mem.read(adrh);
       let result = addedTo + value + (this.c ? 1 : 0);
-      this.c = result > 0xff;
       this.v = (
         (addedTo & 0x80) === (value & 0x80) &&
         (value & 0x80) !== (result & 0x80)
       );
       this.h = ((addedTo & 0xf) + (value & 0xf) + (this.c ? 1 : 0)) > 0xf;
+      this.c = result > 0xff;
       this.setZandN(result);
       this.mem.write(adrh, result & 0xff);
     }
@@ -833,7 +833,7 @@ Spc = (function() {
     }
 
     this.notc = function(adr, adrh, instr) {
-      this.c = this.c ? false : true;
+      this.c = !this.c;
     }
 
     this.tset1 = function(adr, adrh, instr) {
