@@ -837,16 +837,16 @@ Spc = (function() {
     }
 
     this.tset1 = function(adr, adrh, instr) {
-      let value = this.mem.read(adr) ^ 0xff;
-      let result = this.r[A] + value + 1;
+      let value = this.mem.read(adr);
+      let result = this.r[A] + (value ^ 0xff) + 1;
       this.setZandN(result);
       value |= this.r[A];
       this.mem.write(adr, value);
     }
 
     this.tclr1 = function(adr, adrh, instr) {
-      let value = this.mem.read(adr) ^ 0xff;
-      let result = this.r[A] + value + 1;
+      let value = this.mem.read(adr);
+      let result = this.r[A] + (value ^ 0xff) + 1;
       this.setZandN(result);
       value &= ~this.r[A];
       this.mem.write(adr, value);

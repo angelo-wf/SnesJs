@@ -270,9 +270,15 @@ Cpu = (function() {
       return value;
     }
 
-    this.writeWord = function(adr, adrh, result) {
-      this.mem.write(adr, result & 0xff);
-      this.mem.write(adrh, (result & 0xff00) >> 8);
+    this.writeWord = function(adr, adrh, result, reversed = false) {
+      if(reversed) {
+        // RMW opcodes write the high byte first
+        this.mem.write(adrh, (result & 0xff00) >> 8);
+        this.mem.write(adr, result & 0xff);
+      } else {
+        this.mem.write(adr, result & 0xff);
+        this.mem.write(adrh, (result & 0xff00) >> 8);
+      }
     }
 
     this.getAdr = function(opcode, mode) {
@@ -788,7 +794,7 @@ Cpu = (function() {
         this.cyclesLeft += 2; // 2 extra cycles if m = 0
         let result = (value - 1) & 0xffff;
         this.setZandN(result, this.m);
-        this.writeWord(adr, adrh, result);
+        this.writeWord(adr, adrh, result, true);
       }
     }
 
@@ -835,7 +841,7 @@ Cpu = (function() {
         this.cyclesLeft += 2; // 2 extra cycles if m = 0
         let result = (value + 1) & 0xffff;
         this.setZandN(result, this.m);
-        this.writeWord(adr, adrh, result);
+        this.writeWord(adr, adrh, result, true);
       }
     }
 
@@ -954,7 +960,7 @@ Cpu = (function() {
         let result = this.br[A] & value;
         value = (value & ~this.br[A]) & 0xffff;
         this.z = result === 0;
-        this.writeWord(adr, adrh, value);
+        this.writeWord(adr, adrh, value, true);
       }
     }
 
@@ -971,7 +977,7 @@ Cpu = (function() {
         let result = this.br[A] & value;
         value = (value | this.br[A]) & 0xffff;
         this.z = result === 0;
-        this.writeWord(adr, adrh, value);
+        this.writeWord(adr, adrh, value, true);
       }
     }
 
@@ -988,7 +994,7 @@ Cpu = (function() {
         this.c = (value & 0x8000) > 0;
         value <<= 1;
         this.setZandN(value, this.m);
-        this.writeWord(adr, adrh, value);
+        this.writeWord(adr, adrh, value, true);
       }
     }
 
@@ -1020,7 +1026,7 @@ Cpu = (function() {
         this.c = (value & 0x1) > 0;
         value >>= 1;
         this.setZandN(value, this.m);
-        this.writeWord(adr, adrh, value);
+        this.writeWord(adr, adrh, value, true);
       }
     }
 
@@ -1052,7 +1058,7 @@ Cpu = (function() {
         value = (value << 1) | (this.c ? 1 : 0);
         this.c = (value & 0x10000) > 0;
         this.setZandN(value, this.m);
-        this.writeWord(adr, adrh, value);
+        this.writeWord(adr, adrh, value, true);
       }
     }
 
@@ -1087,7 +1093,7 @@ Cpu = (function() {
         value = (value >> 1) | (this.c ? 0x8000 : 0);
         this.c = carry > 0;
         this.setZandN(value, this.m);
-        this.writeWord(adr, adrh, value);
+        this.writeWord(adr, adrh, value, true);
       }
     }
 
