@@ -110,7 +110,7 @@ function Dsp(apu) {
     this.decodeOffset[ch] &= 0xffff;
     let shift = header >> 4;
     let filter = (header & 0xc) >> 2;
-    this.prevFlags[ch] = header & 0x2;
+    this.prevFlags[ch] = header & 0x3;
     let byte = 0;
     for(let i = 0; i < 16; i++) {
       let s = byte & 0xf;
@@ -350,6 +350,12 @@ function Dsp(apu) {
         }
         this.mute = (value & 0x40) > 0;
         // TODO: set echo writes and noise frequency
+        break;
+      }
+      case 0x7c: {
+        // somewhat of a hack, to correctly get the 'writing any value clears all bits' behaviour
+        this.ram[0x7c] = 0;
+        value = 0;
         break;
       }
       case 0x0d: {

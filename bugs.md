@@ -1,7 +1,7 @@
 # List of tested games and bugs
 This is a list of all the games that I have tested and it notes the bugs for each one.
 
-The following games seem to run without any obvious bugs within the first few minutes of gameplay (except not having proper sound, of course).
+The following games seem to run without any obvious CPU/PPU bugs within the first few minutes of gameplay (but some do have issues with sound, like extremely noisy or otherwise wrong samples or (what seems like) SPC bugs).
 
 - Super Mario World
 - Super Mario All-stars
@@ -32,13 +32,13 @@ The following games, however, have bugs.
   - [bug #2](https://github.com/elzo-d/SnesJs/issues/2): This might lead to wall-clipping as well.
 - Snes Burn-in Test (Rev. D)
   - Controller test doesn't color the background blue properly when it passes.
-  - Sound module test gives error 76 (expected because there is no proper DSP emulation yet).
-  - Burn-in test doesn't start, seems to be waiting on the SPC (might be different, seems like it tries to upload some data again after already having uploaded a program to the SPC).
+  - Sound module test gives error 76 (expected because DSP emulation is not fully complete yet).
+  - Burn-in test doesn't start, seems to be waiting on the SPC (some debugging leads to it jumping to bank 8 in error, due to a value in RAM being incorrect).
 - Snes Test Program
   - Input on the menu screen acts weird, looks like it's not always reading it properly.
   - Controller test doesn't color the background blue properly when it passes.
   - Electronics test freezes on a black screen (doesn't seem SPC related, though).
-  - Color test show a wrong scanline near the bottom of the screen during the full-color screens.
+  - Color test show a wrong scanline near the bottom of the screen during the full-color screens (probably something to do with overscan).
 - PeterLemon's roms (from [here](https://github.com/PeterLemon/SNES)):
   - CPUTest/CPU/MSC: Freezes on a black screen when resetting for the STP-test (the PPU should not be reset when resetting the SNES).
   - Games/MonsterFarmHunter: Doesn't work properly when going in-game. A small row of white pixels near the top of the screen moves when pressing left or right (in the opposite direction), but nothing else works.

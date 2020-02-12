@@ -21,9 +21,9 @@ The PPU is able to render most things fine. There are some issues with color mat
 
 DMA, HDMA and the other misc. features are supported, but not cycle-accurate.
 
-The SPC700 audio CPU is emulated, but is not cycle accurate (and might have other accuracy-problems).
+The SPC700 audio CPU is emulated, but is not cycle accurate (and seems to have other accuracy-problems as well).
 
-The DSP (audio generation unit) is somewhat emulated (but there are still lots of problems with it, and most games don't sound correct).
+The DSP (audio generation unit) is mostly emulated, but is missing noise, pitch modulation, echo and Gaussian interpolation. Some games sound mostly right, but there are still some issues.
 
 Although some games seem to run fine, quite a few games are not emulated properly. The file `bugs.md` contains a list of games that have been tested and the problems they have. Most of these bugs are probably caused by some known problems with the PPU and missing edge cases for (H)DMA and timing.
 
