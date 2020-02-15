@@ -2,35 +2,28 @@
 <html>
 <head>
   <link rel="stylesheet" type="text/css" href="style.css">
-  <title>SnesJS</title>
+  <title>SPCplayerJs</title>
 </head>
 <body>
   <input id="rom" type="file">
-  <button id="pause">Pause</button>
-  <button id="reset">Reset</button>
-  <button id="hardreset">Power cycle</button>
-  <button id="runframe">Run 1 frame</button><br>
+  <button id="pause">Pause</button><br>
   <canvas id="output"></canvas>
   <pre id="log"></pre>
   <p>
-    SnesJs, by elzo_d. <a href="spcplayer.html">SPCplayerJs</a><br>
+    SPCplayerJs, by elzo_d. <a href="index.html">SnesJs</a><br>
     Source on <a href="https://github.com/elzo-d/SnesJs">Github</a>.
   </p>
 
   <script src="lib/zip.js"></script>
   <script src="lib/inflate.js"></script>
 
-  <script src="snes/lorom.js"></script>
   <script src="snes/dsp.js"></script>
   <script src="snes/spc.js"></script>
   <script src="snes/apu.js"></script>
-  <script src="snes/pipu.js"></script>
-  <script src="snes/cpu.js"></script>
-  <script src="snes/snes.js"></script>
 
   <script src="js/audio.js"></script>
-  <script src="js/trace.js"></script>
-  <script src="js/main.js"></script>
+  <script src="js/spcp.js"></script>
+  <script src="js/spcmain.js"></script>
 
 </body>
 </html>

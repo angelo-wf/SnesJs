@@ -31,6 +31,8 @@ It can currently only load LOROM games.
 
 Roms can be loaded from zip-files as well, which will load the first file with a .sfc or .smc extension it can find.
 
+The `spcplayer.html` file, linked from the main emulator as well, contains SPCplayerJs, an SPC player using just the APU portion of the emulator. Not all SPC files play correctly, but quite a few seem to mostly work.
+
 ## Controls
 
 Controller 1 and 2 are emulated as plugged in, but only controller 1 has controls set up.
@@ -61,6 +63,8 @@ To run the emulator offline:
 - Clone this repository.
 - Open `index.js` in a browser. Messing around with the browser's autoplay policy might be required.
 
+The `SPCplayerJs` link goes to a SPC player, which simply plays SPC files (but not all files work correctly). It shows the name, game, artist, dumper and comment from the SPC file, and a visualization of the channel volumes L & R (red & green), channel gains (yellow) and channel pitches (blue).
+
 ## Resources
 
 Resources that I used for implementing this:
@@ -76,6 +80,7 @@ Resources that I used for implementing this:
 - Some posts and resources in the [SnesDev section](https://forums.nesdev.com/viewforum.php?f=12) of the NesDev forums.
 - The [Super NES Programming pages](https://en.wikibooks.org/wiki/Super_NES_Programming) in Wikibooks.
 - Various roms (especially the CPU tests) by PeterLemon found [here](https://github.com/PeterLemon/SNES).
+- Various SPC and DSP test by Blargg (from [here](https://forums.nesdev.com/viewtopic.php?f=12&t=10697&p=121027#p121027) and [here](https://forums.nesdev.com/viewtopic.php?f=12&t=18005))
 - The source for the BRR-tools from [SMW central](https://www.smwcentral.net), found [here](https://github.com/jimbo1qaz/BRRtools/tree/32-bit-samples).
 - Some of the wrapper code is based on my [NES emulator](https://github.com/elzo-d/NesJs).
 - The [zip.js](https://gildas-lormeau.github.io/zip.js/) library is used for zipped rom loading support.

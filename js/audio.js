@@ -56,12 +56,12 @@ function AudioHandler() {
   this.process = function(e) {
     if(this.inputReadPos + 2048 > this.inputBufferPos) {
       // we overran the buffer
-      log("Audio buffer overran");
+      // log("Audio buffer overran");
       this.inputReadPos = this.inputBufferPos - 2048;
     }
     if(this.inputReadPos + 4096 < this.inputBufferPos) {
       // we underran the buffer
-      log("Audio buffer underran");
+      // log("Audio buffer underran");
       this.inputReadPos += 2048;
     }
     let outputL = e.outputBuffer.getChannelData(0);

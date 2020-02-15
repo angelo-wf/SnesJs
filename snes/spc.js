@@ -624,7 +624,7 @@ Spc = (function() {
       value |= this.mem.read(adrh) << 8;
       let addTo = (this.r[Y] << 8) | this.r[A];
       let result = addTo + (value ^ 0xffff) + 1;
-      this.z = result === 0;
+      this.z = (result & 0xffff) === 0;
       this.n = (result & 0x8000) > 0;
       this.c = result > 0xffff;
     }
@@ -634,7 +634,7 @@ Spc = (function() {
       value |= this.mem.read(adrh) << 8;
       let addTo = (this.r[Y] << 8) | this.r[A];
       let result = addTo + value;
-      this.z = result === 0;
+      this.z = (result & 0xffff) === 0;
       this.n = (result & 0x8000) > 0;
       this.c = result > 0xffff;
       this.v = (
@@ -652,7 +652,7 @@ Spc = (function() {
       value ^= 0xffff;
       let addTo = (this.r[Y] << 8) | this.r[A];
       let result = addTo + value + 1;
-      this.z = result === 0;
+      this.z = (result & 0xffff) === 0;
       this.n = (result & 0x8000) > 0;
       this.c = result > 0xffff;
       this.v = (

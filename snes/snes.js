@@ -844,17 +844,7 @@ function Snes() {
   }
 
   this.setSamples = function(left, right) {
-    let add = 534 / 735;
-    let total = 0;
-    for(let i = 0; i < 735; i++) {
-      // amplyfy the samples, they are quite quiet
-      let rsl = this.apu.dsp.samplesL[total & 0xffff] * 4
-      let rsr = this.apu.dsp.samplesR[total & 0xffff] * 4
-      left[i] = rsl > 1 ? 1 : (rsl < -1 ? -1 : rsl);
-      right[i] = rsr > 1 ? 1 : (rsr < -1 ? -1 : rsr);
-      total += add;
-    }
-    this.apu.dsp.sampleOffset = 0;
+    this.apu.setSamples(left, right);
   }
 
   this.setPad1ButtonPressed = function(num) {

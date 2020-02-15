@@ -9,8 +9,6 @@ function Dsp(apu) {
   this.samplesR = new Float64Array(534);
   this.sampleOffset = 0;
 
-  this.oldMult = [0, 0.9375, 1.90625, 1.796875];
-  this.olderMult = [0, 0, 0.9375, 0.8125];
   this.rates = [
     0, 2048, 1536, 1280, 1024, 768, 640, 512,
     384, 320, 256, 192, 160, 128, 96, 80,
@@ -58,11 +56,16 @@ function Dsp(apu) {
     this.volumeR = 0;
     this.mute = true;
 
+    this.resetFlag = true;
+    this.noteOff = [true, true, true, true, true, true, true, true];
+
     this.sampleOut = [0, 0, 0, 0, 0, 0, 0, 0];
 
     this.dirPage = 0;
   }
   this.reset();
+
+  // TODO: Gaussian interpolation, echo, noise, pitch modulation
 
   this.cycle = function() {
 
@@ -125,7 +128,22 @@ function Dsp(apu) {
       } else {
         s = s < 0 ? -2048 : 2048;
       }
-      s += this.old[ch] * this.oldMult[filter] - this.older[ch] * this.olderMult[filter];
+      let old = this.old[ch];
+      let older = this.older[ch];
+      switch(filter) {
+        case 1: {
+          s = s + old * 1 + ((-old * 1) >> 4);
+          break;
+        }
+        case 2: {
+          s = s + old * 2 + ((-old * 3) >> 5) - older + ((older * 1) >> 4);
+          break;
+        }
+        case 3: {
+          s = s + old * 2 + ((-old * 13) >> 6) - older + ((older * 3) >> 4);
+          break;
+        }
+      }
       s = s > 0x7fff ? 0x7fff : s;
       s = s < -0x8000 ? -0x8000 : s;
       s = s > 0x3fff ? s - 0x8000 : s;
@@ -134,13 +152,6 @@ function Dsp(apu) {
       this.old[ch] = s;
       this.decodeBuffer[ch * 16 + i] = s;
     }
-  }
-
-  this.get15asSigned = function(val) {
-    if((val & 0x4000) > 0) {
-      return -(0x8000 - val);
-    }
-    return val;
   }
 
   this.cycleChannel = function(ch) {
@@ -155,7 +166,16 @@ function Dsp(apu) {
     let sampleNum = this.counter[ch] >> 12;
     // get the sample out the decode buffer
     let sample = this.decodeBuffer[ch * 16 + sampleNum];
+
     // now update the adsr/gain, if we reach the correct amount of cycles
+    if(this.noteOff[ch] || this.resetFlag) {
+      // if noteoff or reset flag is set, go to release
+      this.adsrState[ch] = 3;
+      if(this.resetFlag) {
+        // also set gain to 0 if reset flag is set
+        this.gain[ch] = 0;
+      }
+    }
     let rate = this.rateNums[ch * 5 + this.adsrState[ch]];
     if(rate !== 0) {
       // only increment if rate is not 0
@@ -239,11 +259,11 @@ function Dsp(apu) {
       this.gain[ch] = this.gainValue[ch];
     }
     let gainedVal = (sample * this.gain[ch]) >> 11;
+
     // write gain to ENVx and this value to OUTx
     this.ram[(ch << 4) | 8] = this.gain[ch] >> 4;
     this.ram[(ch << 4) | 9] = gainedVal >> 7;
     this.sampleOut[ch] = gainedVal;
-
   }
 
   this.read = function(adr) {
@@ -334,20 +354,13 @@ function Dsp(apu) {
       case 0x5c: {
         let test = 1;
         for(let i = 0; i < 8; i++) {
-          if((value & test) > 0) {
-            this.adsrState[i] = 3;
-          }
+          this.noteOff[i] = (value & test) > 0;
           test <<= 1;
         }
         break;
       }
       case 0x6c: {
-        if((value & 0x80) > 0) {
-          for(let i = 0; i < 8; i++) {
-            this.adsrState[i] = 3;
-            this.gain[i] = 0;
-          }
-        }
+        this.resetFlag = (value & 0x80) > 0;
         this.mute = (value & 0x40) > 0;
         // TODO: set echo writes and noise frequency
         break;

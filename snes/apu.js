@@ -214,4 +214,15 @@ function Apu(snes) {
 
     this.ram[adr] = value;
   }
+
+  this.setSamples = function(left, right) {
+    let add = 534 / 735;
+    let total = 0;
+    for(let i = 0; i < 735; i++) {
+      left[i] =  this.dsp.samplesL[total & 0xffff];
+      right[i] =  this.dsp.samplesR[total & 0xffff];
+      total += add;
+    }
+    this.dsp.sampleOffset = 0;
+  }
 }
