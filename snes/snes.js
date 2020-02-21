@@ -34,6 +34,7 @@ function Snes() {
   this.hdmaIndBank = new Uint8Array(8);
   this.hdmaTableAdr = new Uint16Array(8);
   this.hdmaRepCount = new Uint8Array(8);
+  this.dmaUnusedByte = new Uint8Array(8);
 
   this.reset = function(hard) {
     if(hard) {
@@ -46,6 +47,7 @@ function Snes() {
     clearArray(this.hdmaIndBank);
     clearArray(this.hdmaTableAdr);
     clearArray(this.hdmaRepCount);
+    clearArray(this.dmaUnusedByte);
 
     this.cpu.reset();
     this.ppu.reset();
@@ -107,6 +109,7 @@ function Snes() {
     this.dmaDec = [false, false, false, false, false, false, false, false];
     this.hdmaInd = [false, false, false, false, false, false, false, false];
     this.dmaFromB = [false, false, false, false, false, false, false, false];
+    this.dmaUnusedBit = [false, false, false, false, false, false, false, false];
 
     this.hdmaDoTransfer = [
       false, false, false, false, false, false, false, false
@@ -481,6 +484,7 @@ function Snes() {
           let val = this.dmaMode[channel];
           val |= this.dmaFixed[channel] ? 0x8 : 0;
           val |= this.dmaDec[channel] ? 0x10 : 0;
+          val |= this.dmaUnusedBit[channel] ? 0x20 : 0;
           val |= this.hdmaInd[channel] ? 0x40 : 0;
           val |= this.dmaFromB[channel] ? 0x80 : 0;
           return val;
@@ -514,6 +518,10 @@ function Snes() {
         }
         case 0x430a: {
           return this.hdmaRepCount[channel];
+        }
+        case 0x430b:
+        case 0x430f: {
+          return this.dmaUnusedByte[channel];
         }
       }
     }
@@ -619,6 +627,7 @@ function Snes() {
           this.dmaMode[channel] = value & 0x7;
           this.dmaFixed[channel] = (value & 0x08) > 0;
           this.dmaDec[channel] = (value & 0x10) > 0;
+          this.dmaUnusedBit[channel] = (value & 0x20) > 0;
           this.hdmaInd[channel] = (value & 0x40) > 0;
           this.dmaFromB[channel] = (value & 0x80) > 0;
           return;
@@ -665,6 +674,11 @@ function Snes() {
         }
         case 0x430a: {
           this.hdmaRepCount[channel] = value;
+          return;
+        }
+        case 0x430b:
+        case 0x430f: {
+          this.dmaUnusedByte[channel] = value;
           return;
         }
       }

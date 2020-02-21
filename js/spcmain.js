@@ -12,6 +12,8 @@ let loaded = false;
 let paused = false;
 let pausedInBg = false;
 
+let logging = false;
+
 let audioHandler = new AudioHandler();
 
 zip.workerScriptsPath = "lib/";
@@ -108,7 +110,14 @@ function loadSpc(spc) {
 }
 
 function runFrame() {
-  player.runFrame();
+  if(logging) {
+    do {
+      player.cycle();
+    } while(player.apu.spc.cyclesLeft > 0);
+    log(getSpcTrace(player.apu.spc, player.apu.cycles));
+  } else {
+    player.runFrame();
+  }
   player.setSamples(audioHandler.sampleBufferL, audioHandler.sampleBufferR);
   audioHandler.nextBuffer();
   drawVisual();
@@ -157,6 +166,16 @@ function drawVisual() {
     ctx.fillStyle = "#7f7fff";
     scale = player.apu.dsp.pitch[i] * 290 / 0x3fff;
     ctx.fillRect(10 + i * 55 + 40, 470 - scale - 10, 10, 10);
+  }
+}
+
+window.onkeydown = function(e) {
+  switch(e.key) {
+    case "l":
+    case "L": {
+      logging = !logging;
+      break;
+    }
   }
 }
 

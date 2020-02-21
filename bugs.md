@@ -33,7 +33,7 @@ The following games, however, have bugs.
 - Snes Burn-in Test (Rev. D)
   - Controller test doesn't color the background blue properly when it passes.
   - Sound module test gives error 76 (expected because DSP emulation is not fully complete yet).
-  - Burn-in test doesn't start, seems to be waiting on the SPC (some debugging leads to it jumping to bank 8 in error, due to a value in RAM being incorrect).
+  - Burn-in test gives FAIL for DMA, parts of the tilemap get corrupted, and it hangs on the HV-timer test
 - Snes Test Program
   - Input on the menu screen acts weird, looks like it's not always reading it properly.
   - Controller test doesn't color the background blue properly when it passes.

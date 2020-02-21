@@ -15,6 +15,10 @@ function SpcPlayer() {
   }
   this.reset();
 
+  this.cycle = function() {
+    this.apu.cycle();
+  }
+
   this.runFrame = function() {
     // 17088 cycles per frame (32040 * 32 / 60)
     for(let i = 0; i < 17088; i++) {
