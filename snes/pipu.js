@@ -216,12 +216,15 @@ function Ppu(snes) {
   // when subscreen is visible (especially how to handle the subscreen pixels),
   // mosaic with hires/interlace, mosaic on mode 7, rectangular sprites,
   // oddities with sprite X-position being -256, mosaic with offset-per-tile,
-  // offset-per-tile with interlace
+  // offset-per-tile with interlace, reading/writing ram while rendering
 
-  this.renderLine = function(line) {
+  this.checkOverscan = function(line) {
     if(line === 225 && this.overscan) {
       this.frameOverscan = true;
     }
+  }
+
+  this.renderLine = function(line) {
     if(line === 0) {
       // pre-render line
       this.rangeOver = false;
@@ -814,14 +817,11 @@ function Ppu(snes) {
         return (this.multResult & 0xff0000) >> 16;
       }
       case 0x37: {
-        // TODO: docs say this should only happen if bit 7 of the IO port is
-        // set, but always doing it makes The Legend of Zelda: A Link to the
-        // Past work
-        //if(this.snes.ppuLatch) {
-        this.latchedHpos = this.snes.xPos >> 2;
-        this.latchedVpos = this.snes.yPos;
-        //}
-        this.countersLatched = true;
+        if(this.snes.ppuLatch) {
+          this.latchedHpos = this.snes.xPos >> 2;
+          this.latchedVpos = this.snes.yPos;
+          this.countersLatched = true;
+        }
         return this.snes.openBus;
       }
       case 0x38: {
@@ -1066,7 +1066,11 @@ function Ppu(snes) {
       }
       case 0x18: {
         let adr = this.getVramRemap();
-        this.vram[adr] = (this.vram[adr] & 0xff00) | value;
+        // TODO: VRAM access during non-vblank and non-forced blank should be blocked,
+        // but that makes Super Metroid unable to properly update tiles on screen
+        // if(this.forcedBlank || this.snes.ypos > (this.frameOverscan ? 239 : 224)) {
+          this.vram[adr] = (this.vram[adr] & 0xff00) | value;
+        // }
         if(!this.vramIncOnHigh) {
           this.vramAdr += this.vramInc;
           this.vramAdr &= 0xffff;
@@ -1075,7 +1079,9 @@ function Ppu(snes) {
       }
       case 0x19: {
         let adr = this.getVramRemap();
-        this.vram[adr] = (this.vram[adr] & 0xff) | (value << 8);
+        // if(this.forcedBlank || this.snes.ypos > (this.frameOverscan ? 239 : 224)) {
+          this.vram[adr] = (this.vram[adr] & 0xff) | (value << 8);
+        // }
         if(this.vramIncOnHigh) {
           this.vramAdr += this.vramInc;
           this.vramAdr &= 0xffff;

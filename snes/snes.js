@@ -80,7 +80,7 @@ function Snes() {
     this.autoJoyRead = false;
     this.autoJoyBusy = false;
     this.autoJoyTimer = 0;
-    this.ppuLatch = false;
+    this.ppuLatch = true;
 
     this.joypad1Val = 0;
     this.joypad2Val = 0;
@@ -139,7 +139,7 @@ function Snes() {
       this.hdmaTimer -= 2;
     } else if(this.dmaBusy) {
       this.handleDma();
-    } else if (this.xPos < 536 || this.xPos >= 576) {
+    } else if(this.xPos < 536 || this.xPos >= 576) {
       // the cpu is paused for 40 cycles starting around dot 536
       this.cpuCycle();
     }
@@ -176,6 +176,8 @@ function Snes() {
     } else if(this.xPos === 0) {
       // end of hblank
       this.inHblank = false;
+      // check if the ppu will render a 239-high frame or not
+      this.ppu.checkOverscan(this.yPos);
     } else if(this.xPos === 512 && !noPpu) {
       // render line at cycle 512 for better support
       this.ppu.renderLine(this.yPos);
@@ -764,11 +766,9 @@ function Snes() {
         this.joypad2Val |= 0x8000;
         return val;
       }
-      if(adr >= 0x4200 && adr < 0x4400) {
+      if(adr >= 0x4200 && adr < 0x4380) {
         return this.readReg(adr);
       }
-
-      return this.openBus; // not readable
     }
     return this.cart.read(bank, adr);
   }
@@ -810,7 +810,7 @@ function Snes() {
       if(adr === 0x4016) {
         this.joypadStrobe = (value & 0x1) > 0;
       }
-      if(adr >= 0x4200 && adr < 0x4400) {
+      if(adr >= 0x4200 && adr < 0x4380) {
         this.writeReg(adr, value);
       }
 

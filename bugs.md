@@ -33,12 +33,10 @@ The following games, however, have bugs.
 - Snes Burn-in Test (Rev. D)
   - Controller test doesn't color the background blue properly when it passes.
   - Sound module test gives error 76 (expected because DSP emulation is not fully complete yet).
-  - Burn-in test gives FAIL for DMA, parts of the tilemap get corrupted, and it hangs on the HV-timer test
+  - Burn-in test gives FAIL for DMA, parts of the tilemap get corrupted, and it hangs on the HV-timer test.
 - Snes Test Program
-  - Input on the menu screen acts weird, looks like it's not always reading it properly.
   - Controller test doesn't color the background blue properly when it passes.
-  - Electronics test freezes on a black screen (doesn't seem SPC related, though).
-  - Color test show a wrong scanline near the bottom of the screen during the full-color screens (probably something to do with overscan).
+  - Electronics test freezes on a black screen (hanging at the same spot as the burn-in test).
 - PeterLemon's roms (from [here](https://github.com/PeterLemon/SNES)):
   - CPUTest/CPU/MSC: Freezes on a black screen when resetting for the STP-test (the PPU should not be reset when resetting the SNES).
   - Games/MonsterFarmHunter: Doesn't work properly when going in-game. A small row of white pixels near the top of the screen moves when pressing left or right (in the opposite direction), but nothing else works.
@@ -52,4 +50,6 @@ The following games, however, have bugs.
   - Timings are all somewhat off.
 - Blargg's SPC tests (from [here](https://forums.nesdev.com/viewtopic.php?f=12&t=18005)):
   - These seem to be oddly sized, but resizing them to a multiple of 0x8000 bytes makes them boot.
-  - spc_smp: fails on CPU Timing/mem access times (expected because it is not cycle accurate).
+  - spc_smp: fails on 'CPU Timing/mem access times': "B7969B23 Failed 02" (expected because the SPC is not cycle accurate).
+  - spc_timer: fails on 'timer read vs write': "1111111222 033A4611 Failed 02".
+  - spc_dsp6: faild on 'Echo/basic': "Failed 03" (expected because echo is not implemented yet).

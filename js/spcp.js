@@ -100,7 +100,10 @@ function SpcPlayer() {
     }
     // set up SPC-side registers
     for(let i = 0; i < 16; i++) {
-      this.apu.write(0xf0 + i, file[0x1f0 + i]);
+      if(i !== 3) {
+        // don't write to the dsp-data register
+        this.apu.write(0xf0 + i, file[0x1f0 + i]);
+      }
     }
     // set up DSP registers
     for(let i = 0; i < 0x80; i++) {

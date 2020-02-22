@@ -146,8 +146,8 @@ function Dsp(apu) {
       }
       s = s > 0x7fff ? 0x7fff : s;
       s = s < -0x8000 ? -0x8000 : s;
+      s &= 0x7fff;
       s = s > 0x3fff ? s - 0x8000 : s;
-      s = s < -0x4000 ? s + 0x8000 : s;
       this.older[ch] = this.old[ch];
       this.old[ch] = s;
       this.decodeBuffer[ch * 16 + i] = s;

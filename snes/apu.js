@@ -163,6 +163,18 @@ function Apu(snes) {
         break;
       }
       case 0xf1: {
+        if(!this.timer1enabled && (value & 0x01) > 0) {
+          this.timer1div = 0;
+          this.timer1counter = 0;
+        }
+        if(!this.timer2enabled && (value & 0x02) > 0) {
+          this.timer2div = 0;
+          this.timer2counter = 0;
+        }
+        if(!this.timer3enabled && (value & 0x04) > 0) {
+          this.timer3div = 0;
+          this.timer3counter = 0;
+        }
         this.timer1enabled = (value & 0x01) > 0;
         this.timer2enabled = (value & 0x02) > 0;
         this.timer3enabled = (value & 0x04) > 0;
