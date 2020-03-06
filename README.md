@@ -31,7 +31,7 @@ It can currently only load LOROM games.
 
 Roms can be loaded from zip-files as well, which will load the first file with a .sfc or .smc extension it can find.
 
-The `spcplayer.html` file, linked from the main emulator as well, contains SPCplayerJs, an SPC player using just the APU portion of the emulator. Not all SPC files play correctly, but quite a few seem to mostly work.
+The `spcplayer.html` file, linked from the main emulator as well, contains SpcJs, an SPC player using just the APU portion of the emulator. Not all SPC files play correctly, but quite a few seem to mostly work.
 
 ## Controls
 
@@ -63,7 +63,7 @@ To run the emulator offline:
 - Clone this repository.
 - Open `index.js` in a browser. Messing around with the browser's autoplay policy might be required.
 
-The `SPCplayerJs` link goes to a SPC player, which simply plays SPC files (but not all files work correctly). It shows the name, game, artist, dumper and comment from the SPC file, and a visualization of the channel volumes L & R (red & green), channel gains (yellow) and channel pitches (blue).
+The [SpcJs](https://elzo-d.github.io/SnesJs/spcplayer.html) link goes to a SPC player, which simply plays SPC files (but not all files work correctly). It shows the name, game, artist, dumper and comment from the SPC file, and a visualization of the channel volumes L & R (red & green), channel gains (yellow) and channel pitches (blue).
 
 ## Resources
 

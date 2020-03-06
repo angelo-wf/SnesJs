@@ -3,6 +3,10 @@ function SpcPlayer() {
 
   this.apu = new Apu(this);
 
+  this.loadedFile = undefined;
+
+  // TODO: having reset return if the file is valid is not optimal
+
   this.reset = function() {
     this.apu.reset();
     this.tags = {
@@ -11,6 +15,11 @@ function SpcPlayer() {
       dumper: "",
       comment: "",
       artist: ""
+    }
+    if(this.loadedFile) {
+      return this.parseSpc(this.loadedFile);
+    } else {
+      return false;
     }
   }
   this.reset();
@@ -31,7 +40,12 @@ function SpcPlayer() {
   }
 
   this.loadSpc = function(file) {
-    this.reset();
+    this.loadedFile = file;
+    return this.reset();
+  }
+
+  this.parseSpc = function(file) {
+    this.apu.reset();
     if(file.length < 0x10200) {
       log("Invalid length");
       return false;
@@ -107,8 +121,12 @@ function SpcPlayer() {
     }
     // set up DSP registers
     for(let i = 0; i < 0x80; i++) {
-      this.apu.dsp.write(i, file[0x10100 + i]);
+      if(i !== 0x4c) {
+        this.apu.dsp.write(i, file[0x10100 + i]);
+      }
     }
+    // write key-on last
+    this.apu.dsp.write(0x4c, file[0x1014c]);
     // shadow ram
     for(let i = 0; i < 0x40; i++) {
       this.apu.ram[0xffc0 + i] = file[0x101c0 + i];

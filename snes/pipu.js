@@ -277,8 +277,6 @@ function Ppu(snes) {
           g2 = (color & 0x3e0) >> 5;
           b2 = (color & 0x7c00) >> 10;
 
-          // TODO: docs day that this clips before math, but it seems to simply
-          // always clip the pixels to black?
           if(
             this.colorClip === 3 ||
             (this.colorClip === 2 && this.getWindowState(i, 5)) ||
@@ -310,9 +308,7 @@ function Ppu(snes) {
               g2 += (this.addSub && secondLay[1] < 5) ? g1 : this.fixedColorG;
               b2 += (this.addSub && secondLay[1] < 5) ? b1 : this.fixedColorB;
             }
-            // TODO: docs say that halfing should not happen if adding the
-            // direct color, but that makes some effects in the SNES character
-            // test look wrong
+
             if(this.halfColors && (secondLay[1] < 5 || !this.addSub)) {
               r2 >>= 1;
               g2 >>= 1;

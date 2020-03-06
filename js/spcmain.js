@@ -84,6 +84,12 @@ el("pause").onclick = function() {
   }
 }
 
+el("reset").onclick = function() {
+  if(loaded) {
+    player.reset();
+  }
+}
+
 document.onvisibilitychange = function(e) {
   if(document.hidden) {
     pausedInBg = false;
