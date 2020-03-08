@@ -855,7 +855,7 @@ Spc = (function() {
     this.cbne = function(adr, adrh, instr) {
       let value = this.mem.read(adr) ^ 0xff;
       let result = this.r[A] + value + 1;
-      this.doBranch(result !== 0, adrh);
+      this.doBranch((result & 0xff) !== 0, adrh);
     }
 
     this.dbnz = function(adr, adrh, instr) {

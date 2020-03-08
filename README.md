@@ -21,9 +21,9 @@ The PPU is able to render most things fine. There are some issues with color mat
 
 DMA, HDMA and the other misc. features are supported, but not cycle-accurate.
 
-The SPC700 audio CPU is emulated, but is not cycle accurate (and seems to have other accuracy-problems as well).
+The SPC700 audio CPU is emulated, but is not cycle accurate.
 
-The DSP (audio generation unit) is mostly emulated, but is missing noise, pitch modulation, echo and Gaussian interpolation. Some games sound mostly right, but there are still some issues.
+The DSP (audio generation unit) is mostly emulated, but is missing the echo. Most games sound mostly right, but there are still some issues.
 
 Although some games seem to run fine, quite a few games are not emulated properly. The file `bugs.md` contains a list of games that have been tested and the problems they have. Most of these bugs are probably caused by some known problems with the PPU and missing edge cases for (H)DMA and timing.
 
@@ -31,7 +31,7 @@ It can currently only load LOROM games.
 
 Roms can be loaded from zip-files as well, which will load the first file with a .sfc or .smc extension it can find.
 
-The `spcplayer.html` file, linked from the main emulator as well, contains SpcJs, an SPC player using just the APU portion of the emulator. Not all SPC files play correctly, but quite a few seem to mostly work.
+The `spcplayer.html` file, linked from the main emulator as well, contains SpcJs, an SPC player using just the APU portion of the emulator. Not all SPC files play correctly, but most seem to work.
 
 ## Controls
 
@@ -53,7 +53,7 @@ Controller 1 and 2 are emulated as plugged in, but only controller 1 has control
 | R           | C               |
 
 - Pressing L will toggle 'log-mode', where it runs a single CPU-instruction each frame and logs it in trace-log format.
-- Pressing P will toggle 'no-PPU mode', where it will not emulate the PPU rendering. This allows it to run at full speed, and makes working on the DSP easier.
+- Pressing P will toggle 'no-PPU mode', where it will not emulate the PPU rendering. This allows it to run at full speed, and makes working on / listening to the DSP easier.
 
 ## Usage
 
@@ -63,7 +63,7 @@ To run the emulator offline:
 - Clone this repository.
 - Open `index.js` in a browser. Messing around with the browser's autoplay policy might be required.
 
-The [SpcJs](https://elzo-d.github.io/SnesJs/spcplayer.html) link goes to a SPC player, which simply plays SPC files (but not all files work correctly). It shows the name, game, artist, dumper and comment from the SPC file, and a visualization of the channel volumes L & R (red & green), channel gains (yellow) and channel pitches (blue).
+The [SpcJs](https://elzo-d.github.io/SnesJs/spcplayer.html) link goes to a SPC player, which simply plays SPC files (most files seem to load correctly, but some don't sound quite right). It shows the name, game, artist, dumper and comment from the SPC file, and a visualization of the volume L & R (red & green), gain (yellow) and pitch (blue) for each channel (1 to 8, from left to right). Pressing L toggles 'log-mode', where it runs a single SPC-instruction each frame and logs it in trace-log format.
 
 ## Resources
 

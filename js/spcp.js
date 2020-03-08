@@ -131,6 +131,11 @@ function SpcPlayer() {
     for(let i = 0; i < 0x40; i++) {
       this.apu.ram[0xffc0 + i] = file[0x101c0 + i];
     }
+    // set the read-registers equal to the write-registers
+    this.apu.spcReadPorts[0] = this.apu.spcWritePorts[0];
+    this.apu.spcReadPorts[1] = this.apu.spcWritePorts[1];
+    this.apu.spcReadPorts[2] = this.apu.spcWritePorts[2];
+    this.apu.spcReadPorts[3] = this.apu.spcWritePorts[3];
 
     return true;
   }

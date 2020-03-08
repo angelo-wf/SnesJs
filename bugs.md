@@ -1,7 +1,7 @@
 # List of tested games and bugs
 This is a list of all the games that I have tested and it notes the bugs for each one.
 
-The following games seem to run without any obvious CPU/PPU bugs within the first few minutes of gameplay (but some do have issues with sound, like extremely noisy or otherwise wrong samples or (what seems like) SPC bugs).
+The following games seem to run without any obvious CPU/PPU bugs within the first few minutes of gameplay (and audio also seems to properly work (except for the echo), but is not really checked).
 
 - Super Mario World
 - Super Mario All-stars
@@ -14,6 +14,7 @@ The following games seem to run without any obvious CPU/PPU bugs within the firs
 - R.P.M. Racing
 - Tetris & Dr. Mario
 - Lufia II
+- Mohawk & Headphone Jack
 - Most of PeterLemon's roms from [here](https://github.com/PeterLemon/SNES)
   - Except the ones marked below and the ones that use expansion chips or are sound-based.
 
@@ -21,12 +22,12 @@ The following games, however, have bugs.
 
 - Super Metroid
   - Shows corrupted graphics when they load due to a full screen transition (like intro -> space colony, map -> game or title -> demo). The same graphics load fine when they load due to a (scrolling) room transition, though.
-- Mohawk & Headphone Jack
-  - Freezes on boot, waiting on the SPC.
 - A.S.P. - Air Strike Patrol
-  - Freezes on the 'Seta presents' screen, waiting on the SPC.
+  - Has graphical problems, like the pre-stage briefing having shaking characters and the shadow during gameplay missing / glitching, among other things (mostly due to it using mid-scanline effects).
 - Jurassic Park
   - Doesn't blank the left and right sides of the screen properly for the visible sub-screen pixels.
+- Jurassic Park Part 2: The Chaos Continues
+  - Palettes on the title screen get corrupted.
 - Sparkster
   - Sometimes seems to render incorrect tiles to the screen and has the camera behaving oddly.
   - [bug #2](https://github.com/elzo-d/SnesJs/issues/2): This might lead to wall-clipping as well.
@@ -53,3 +54,10 @@ The following games, however, have bugs.
   - spc_smp: fails on 'CPU Timing/mem access times': "B7969B23 Failed 02" (expected because the SPC is not cycle accurate).
   - spc_timer: fails on 'timer read vs write': "1111111222 033A4611 Failed 02".
   - spc_dsp6: faild on 'Echo/basic': "Failed 03" (expected because echo is not implemented yet).
+
+## Broken SPC's
+
+The following SPC's are known to not load or sound noticeably incorrect.
+
+- Kirby Super Star: Peanut Plain
+  - Some instruments are too loud / sound wrong.
