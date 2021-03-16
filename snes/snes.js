@@ -24,7 +24,7 @@ function Snes() {
 
   this.dmaOffLengths = [1, 2, 2, 4, 4, 4, 2, 4];
 
-  this.apuCyclesPerMaster = (32040 * 32) / (1364 * 262 * 60)
+  this.apuCyclesPerMaster = (32040 * 32) / (1364 * 262 * 60);
 
   // for dma
   this.dmaBadr = new Uint8Array(8);
@@ -78,7 +78,6 @@ function Snes() {
     this.inVblank = false;
 
     this.autoJoyRead = false;
-    this.autoJoyBusy = false;
     this.autoJoyTimer = 0;
     this.ppuLatch = true;
 
@@ -188,7 +187,6 @@ function Snes() {
       this.inNmi = true;
       this.inVblank = true;
       if(this.autoJoyRead) {
-        this.autoJoyBusy = true;
         this.autoJoyTimer = 4224;
         this.doAutoJoyRead();
       }
@@ -202,11 +200,8 @@ function Snes() {
       this.initHdma();
     }
 
-    if(this.autoJoyBusy) {
+    if(this.autoJoyTimer > 0) {
       this.autoJoyTimer -= 2; // loop only runs every second master cycle
-      if(this.autoJoyTimer === 0) {
-        this.autoJoyBusy = false;
-      }
     }
 
     // TODO: in non-intelace mode, line 240 on every odd frame is 1360 cycles
@@ -324,6 +319,7 @@ function Snes() {
       if(this.hdmaActive[i]) {
         // terminate DMA if it was busy for this channel
         this.dmaActive[i] = false;
+        this.dmaOffIndex = 0;
 
         this.hdmaTableAdr[i] = this.dmaAadr[i];
         this.hdmaRepCount[i] = this.read(
@@ -353,6 +349,7 @@ function Snes() {
       if(this.hdmaActive[i] && !this.hdmaTerminated[i]) {
         // terminate dma if it is busy on this channel
         this.dmaActive[i] = false;
+        // this.dmaOffIndex = 0;
         this.hdmaTimer += 8;
         if(this.hdmaDoTransfer[i]) {
           for(let j = 0; j < this.dmaOffLengths[this.dmaMode[i]]; j++) {
@@ -422,7 +419,7 @@ function Snes() {
   this.readReg = function(adr) {
     switch(adr) {
       case 0x4210: {
-        let val = 0x1;
+        let val = 0x2;
         val |= this.inNmi ? 0x80 : 0;
         val |= this.openBus & 0x70;
         this.inNmi = false;
@@ -436,7 +433,7 @@ function Snes() {
         return val;
       }
       case 0x4212: {
-        let val = this.autoJoyBusy ? 0x1 : 0;
+        let val = (this.autoJoyTimer > 0) ? 0x1 : 0;
         val |= this.inHblank ? 0x40 : 0;
         val |= this.inVblank ? 0x80 : 0;
         val |= this.openBus & 0x3e;
@@ -535,9 +532,16 @@ function Snes() {
     switch(adr) {
       case 0x4200: {
         this.autoJoyRead = (value & 0x1) > 0;
+        if(!this.autoJoyRead) {
+          this.autoJoyTimer = 0;
+        }
         this.hIrqEnabled = (value & 0x10) > 0;
         this.vIrqEnabled = (value & 0x20) > 0;
         this.nmiEnabled = (value & 0x80) > 0;
+        if(!this.hIrqEnabled && !this.vIrqEnabled) {
+          this.cpu.irqWanted = false;
+          this.inIrq = false;
+        }
         return;
       }
       case 0x4201: {
@@ -883,12 +887,12 @@ function Snes() {
       log("Failed to load rom: Incorrect size - " + rom.length);
       return false;
     }
-    if(header.type !== 0) {
-      log("Failed to load rom: not LoRom, type = " + getByteRep(
-        (header.speed << 4) | header.type
-      ));
-      return false;
-    }
+    // if(header.type !== 0) {
+    //   log("Failed to load rom: not LoRom, type = " + getByteRep(
+    //     (header.speed << 4) | header.type
+    //   ));
+    //   return false;
+    // }
     if(rom.length < header.romSize) {
       let extraData = rom.length - (header.romSize / 2);
       log("Extending rom to account for extra data");
@@ -920,6 +924,17 @@ function Snes() {
       romSize: 0x400 << rom[0x7fd7],
       ramSize: 0x400 << rom[0x7fd8]
     };
+    // for(let i = 0; i < 21; i++) {
+    //   str += String.fromCharCode(rom[0xffc0 + i]);
+    // }
+    // let header = {
+    //   name: str,
+    //   type: rom[0xffd5] & 0xf,
+    //   speed: rom[0xffd5] >> 4,
+    //   chips: rom[0xffd6],
+    //   romSize: 0x400 << rom[0xffd7],
+    //   ramSize: 0x400 << rom[0xffd8]
+    // };
     if(header.romSize < rom.length) {
       // probably wrong header?
       // seems to help with snes test program and such

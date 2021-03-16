@@ -244,12 +244,19 @@ Cpu = (function() {
     }
 
     this.pushByte = function(value) {
-      this.mem.write(this.br[SP], value);
+      if(this.e) {
+        this.mem.write((this.br[SP] & 0xff) | 0x100, value);
+      } else {
+        this.mem.write(this.br[SP], value);
+      }
       this.br[SP]--;
     }
 
     this.pullByte = function() {
       this.br[SP]++;
+      if(this.e) {
+        return this.mem.read((this.br[SP] & 0xff) | 0x100);
+      }
       return this.mem.read(this.br[SP]);
     }
 
@@ -1458,22 +1465,22 @@ Cpu = (function() {
     this.plx = function(adr, adrh) {
       if(this.x) {
         this.br[X] = this.pullByte();
-        this.setZandN(this.br[X], this.m);
+        this.setZandN(this.br[X], this.x);
       } else {
         this.cyclesLeft++; // x = 0: 1 extra cycle
         this.br[X] = this.pullWord();
-        this.setZandN(this.br[X], this.m);
+        this.setZandN(this.br[X], this.x);
       }
     }
 
     this.ply = function(adr, adrh) {
       if(this.x) {
         this.br[Y] = this.pullByte();
-        this.setZandN(this.br[Y], this.m);
+        this.setZandN(this.br[Y], this.x);
       } else {
         this.cyclesLeft++; // x = 0: 1 extra cycle
         this.br[Y] = this.pullWord();
-        this.setZandN(this.br[Y], this.m);
+        this.setZandN(this.br[Y], this.x);
       }
     }
 

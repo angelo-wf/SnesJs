@@ -31,6 +31,15 @@ function Lorom(data, header) {
       }
     }
     return this.data[((bank & (this.banks - 1)) << 15) | (adr & 0x7fff)];
+    // if(adr >= 0x6000 && adr < 0x8000 && this.hasSram) {
+    //   if((bank < 0x40 || (bank >= 0x80 && bank < 0xc0))) {
+    //     // sram
+    //     return this.sram[
+    //       (((bank & 0x3f) << 13) | (adr & 0x1fff)) & (this.sramSize - 1)
+    //     ]
+    //   }
+    // }
+    // return this.data[(((bank & 0x3f) & (this.banks - 1)) << 16) | adr];
   }
 
   this.write = function(bank, adr, value) {
@@ -39,5 +48,13 @@ function Lorom(data, header) {
         (((bank - 0x70) << 15) | (adr & 0x7fff)) & (this.sramSize - 1)
       ] = value;
     }
+    // if(adr >= 0x6000 && adr < 0x8000 && this.hasSram) {
+    //   if((bank < 0x40 || (bank >= 0x80 && bank < 0xc0))) {
+    //     // sram
+    //     this.sram[
+    //       (((bank & 0x3f) << 13) | (adr & 0x1fff)) & (this.sramSize - 1)
+    //     ] = value;
+    //   }
+    // }
   }
 }

@@ -240,6 +240,7 @@ function Ppu(snes) {
       if(!this.forcedBlank) {
         this.oamAdr = this.oamRegAdr;
         this.oamInHigh = this.oamRegInHigh;
+        this.oamSecond = false;
       }
       this.frameInterlace = this.interlace;
       this.evenFrame = !this.evenFrame;
@@ -609,6 +610,8 @@ function Ppu(snes) {
     let spriteCount = 0;
     let sliverCount = 0;
     // search through oam, backwards
+    // TODO: wrong (?): OAM is searched forwards for sprites in range,
+    // and it's these in-range sprites that are handled backwards for tile fetching
     let index = this.objPriority ? ((this.oamAdr & 0xfe) - 2) & 0xff : 254;
     for(let i = 0; i < 128; i++) {
       let x = this.oam[index] & 0xff;
@@ -846,8 +849,8 @@ function Ppu(snes) {
       }
       case 0x39: {
         let val = this.vramReadBuffer;
-        this.vramReadBuffer = this.vram[this.getVramRemap()];
         if(!this.vramIncOnHigh) {
+          this.vramReadBuffer = this.vram[this.getVramRemap()];
           this.vramAdr += this.vramInc;
           this.vramAdr &= 0xffff;
         }
@@ -855,8 +858,8 @@ function Ppu(snes) {
       }
       case 0x3a: {
         let val = this.vramReadBuffer;
-        this.vramReadBuffer = this.vram[this.getVramRemap()];
         if(this.vramIncOnHigh) {
+          this.vramReadBuffer = this.vram[this.getVramRemap()];
           this.vramAdr += this.vramInc;
           this.vramAdr &= 0xffff;
         }
@@ -909,7 +912,7 @@ function Ppu(snes) {
         }
         this.latchHsecond = false;
         this.latchVsecond = false;
-        return val | 0x2;
+        return val | 0x3;
       }
     }
     return this.snes.openBus;
@@ -1046,7 +1049,7 @@ function Ppu(snes) {
         } else {
           this.vramInc = 128;
         }
-        this.vramRemap = (value & 0xc0) >> 2;
+        this.vramRemap = (value & 0x0c) >> 2;
         this.vramIncOnHigh = (value & 0x80) > 0;
         return;
       }
