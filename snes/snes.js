@@ -875,14 +875,14 @@ function Snes() {
 
   // rom loading and header parsing
 
-  this.loadRom = function(rom) {
+  this.loadRom = function(rom, isHirom) {
     if(rom.length % 0x8000 === 0) {
       // no copier header
-      header = this.parseHeader(rom);
+      header = this.parseHeader(rom, isHirom);
     } else if((rom.length - 512) % 0x8000 === 0) {
       // 512-byte copier header
       rom = new Uint8Array(Array.prototype.slice.call(rom, 512));
-      header = this.parseHeader(rom);
+      header = this.parseHeader(rom, isHirom);
     } else {
       log("Failed to load rom: Incorrect size - " + rom.length);
       return false;
@@ -907,34 +907,38 @@ function Snes() {
       }
       rom = nRom;
     }
-    this.cart = new Lorom(rom, header);
+    this.cart = new Cart(rom, header, isHirom);
     return true;
   }
 
-  this.parseHeader = function(rom) {
+  this.parseHeader = function(rom, isHirom) {
     let str = "";
-    for(let i = 0; i < 21; i++) {
-      str += String.fromCharCode(rom[0x7fc0 + i]);
+    let header;
+    if(!isHirom) {
+      for(let i = 0; i < 21; i++) {
+        str += String.fromCharCode(rom[0x7fc0 + i]);
+      }
+      header = {
+        name: str,
+        type: rom[0x7fd5] & 0xf,
+        speed: rom[0x7fd5] >> 4,
+        chips: rom[0x7fd6],
+        romSize: 0x400 << rom[0x7fd7],
+        ramSize: 0x400 << rom[0x7fd8]
+      };
+    } else {
+      for(let i = 0; i < 21; i++) {
+        str += String.fromCharCode(rom[0xffc0 + i]);
+      }
+      header = {
+        name: str,
+        type: rom[0xffd5] & 0xf,
+        speed: rom[0xffd5] >> 4,
+        chips: rom[0xffd6],
+        romSize: 0x400 << rom[0xffd7],
+        ramSize: 0x400 << rom[0xffd8]
+      };
     }
-    let header = {
-      name: str,
-      type: rom[0x7fd5] & 0xf,
-      speed: rom[0x7fd5] >> 4,
-      chips: rom[0x7fd6],
-      romSize: 0x400 << rom[0x7fd7],
-      ramSize: 0x400 << rom[0x7fd8]
-    };
-    // for(let i = 0; i < 21; i++) {
-    //   str += String.fromCharCode(rom[0xffc0 + i]);
-    // }
-    // let header = {
-    //   name: str,
-    //   type: rom[0xffd5] & 0xf,
-    //   speed: rom[0xffd5] >> 4,
-    //   chips: rom[0xffd6],
-    //   romSize: 0x400 << rom[0xffd7],
-    //   ramSize: 0x400 << rom[0xffd8]
-    // };
     if(header.romSize < rom.length) {
       // probably wrong header?
       // seems to help with snes test program and such

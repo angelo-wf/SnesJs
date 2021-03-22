@@ -10,6 +10,8 @@ let loaded = false;
 let paused = false;
 let pausedInBg = false;
 
+let romArr = new Uint8Array([]);
+
 let snes = new Snes();
 
 let audioHandler = new AudioHandler();
@@ -58,8 +60,8 @@ el("rom").onchange = function(e) {
                 let breader = new FileReader();
                 breader.onload = function() {
                   let rbuf = breader.result;
-                  let arr = new Uint8Array(rbuf);
-                  loadRom(arr);
+                  romArr = new Uint8Array(rbuf);
+                  loadRom(romArr);
                   reader.close(function() {});
                 }
                 breader.readAsArrayBuffer(blob);
@@ -78,8 +80,8 @@ el("rom").onchange = function(e) {
       });
     } else {
       // load rom normally
-      let arr = new Uint8Array(buf);
-      loadRom(arr);
+      romArr = new Uint8Array(buf);
+      loadRom(romArr);
     }
   }
   freader.readAsArrayBuffer(e.target.files[0]);
@@ -113,6 +115,13 @@ el("runframe").onclick = function(e) {
   }
 }
 
+el("ishirom").onchange = function(e) {
+  if(loaded) {
+    // reload when switching from LoROM to HiROM
+    loadRom(romArr);
+  }
+}
+
 document.onvisibilitychange = function(e) {
   if(document.hidden) {
     pausedInBg = false;
@@ -129,7 +138,8 @@ document.onvisibilitychange = function(e) {
 }
 
 function loadRom(rom) {
-  if(snes.loadRom(rom)) {
+  let hiRom = el("ishirom").checked;
+  if(snes.loadRom(rom, hiRom)) {
     snes.reset(true);
     if(!loaded && !paused) {
       loopId = requestAnimationFrame(update);
