@@ -9,7 +9,7 @@ I don't think I will continue working on this Javascript emulator.
 
 Although it is a nice proof of concept, not being able to run at full speed (on my hardware) makes working on it quite annoying. I originally started it because my Javascript NES emulator ([here](https://github.com/elzo-d/NesJs)) ran full speed (on my hardware) quite easily, even though it it not really optimised at all. This made me think emulating the SNES full speed might be possible as well. This however does not seem to be the case.
 
-I have instead decided to work on a SNES emulator in C, over [here](https://github.com/elzo-d/ElzSnes). It has better performance (although still not all that good, but at least it runs full speed) and some of the bugs and shortcomings this emulator has are not present in the C version. I might look into using Emscripten to have that core run in the browser and use it in this emulator, instead of using the current all-Javascript core.
+I have instead decided to work on a SNES emulator in C, over [here](https://github.com/elzo-d/LakeSnes). It has better performance (although still not all that good, but at least it runs full speed) and some of the bugs and shortcomings this emulator has are not present in the C version. I might look into using Emscripten to have that core run in the browser and use it in this emulator, instead of using the current all-Javascript core.
 
 ## About
 
