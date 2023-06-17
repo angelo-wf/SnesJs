@@ -861,8 +861,8 @@ function Snes() {
     this.ppu.setPixels(arr);
   }
 
-  this.setSamples = function(left, right) {
-    this.apu.setSamples(left, right);
+  this.setSamples = function(left, right, samples) {
+    this.apu.setSamples(left, right, samples);
   }
 
   this.setPad1ButtonPressed = function(num) {

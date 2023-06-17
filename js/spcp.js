@@ -35,8 +35,8 @@ function SpcPlayer() {
     }
   }
 
-  this.setSamples = function(left, right) {
-    this.apu.setSamples(left, right);
+  this.setSamples = function(left, right, samples) {
+    this.apu.setSamples(left, right, samples);
   }
 
   this.loadSpc = function(file) {

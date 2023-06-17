@@ -175,7 +175,7 @@ function runFrame() {
 
   snes.setPixels(imgData.data);
   ctx.putImageData(imgData, 0, 0);
-  snes.setSamples(audioHandler.sampleBufferL, audioHandler.sampleBufferR);
+  snes.setSamples(audioHandler.sampleBufferL, audioHandler.sampleBufferR, audioHandler.samplesPerFrame);
   audioHandler.nextBuffer();
 }
 

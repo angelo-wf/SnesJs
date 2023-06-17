@@ -124,7 +124,7 @@ function runFrame() {
   } else {
     player.runFrame();
   }
-  player.setSamples(audioHandler.sampleBufferL, audioHandler.sampleBufferR);
+  player.setSamples(audioHandler.sampleBufferL, audioHandler.sampleBufferR, audioHandler.samplesPerFrame);
   audioHandler.nextBuffer();
   drawVisual();
 }

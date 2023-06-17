@@ -1,15 +1,15 @@
 # SnesJs
 A SNES emulator, in javascript
 
-Try it online [here](https://elzo-d.github.io/SnesJs/).
+Try it online [here](https://angelo-wf.github.io/SnesJs/).
 
 ## Note
 
 I don't think I will continue working on this Javascript emulator.
 
-Although it is a nice proof of concept, not being able to run at full speed (on my hardware) makes working on it quite annoying. I originally started it because my Javascript NES emulator ([here](https://github.com/elzo-d/NesJs)) ran full speed (on my hardware) quite easily, even though it it not really optimised at all. This made me think emulating the SNES full speed might be possible as well. This however does not seem to be the case.
+Although it is a nice proof of concept, not being able to run at full speed (on my hardware) makes working on it quite annoying. I originally started it because my Javascript NES emulator ([here](https://github.com/angelo-wf/NesJs)) ran full speed (on my hardware) quite easily, even though it it not really optimised at all. This made me think emulating the SNES full speed might be possible as well. This however does not seem to be the case.
 
-I have instead decided to work on a SNES emulator in C, over [here](https://github.com/elzo-d/LakeSnes). It has better performance (although still not all that good, but at least it runs full speed) and some of the bugs and shortcomings this emulator has are not present in the C version. I might look into using Emscripten to have that core run in the browser and use it in this emulator, instead of using the current all-Javascript core.
+I have instead decided to work on a SNES emulator in C, over [here](https://github.com/angelo-wf/LakeSnes). It has better performance (although still not all that good, but at least it runs full speed) and some of the bugs and shortcomings this emulator has are not present in the C version. I might look into using Emscripten to have that core run in the browser and use it in this emulator, instead of using the current all-Javascript core.
 
 ## About
 
@@ -59,13 +59,13 @@ Controller 1 and 2 are emulated as plugged in, but only controller 1 has control
 
 ## Usage
 
-The emulator can be used online [here](https://elzo-d.github.io/SnesJs/).
+The emulator can be used online [here](https://angelo-wf.github.io/SnesJs/).
 
 To run the emulator offline:
 - Clone this repository.
 - Open `index.js` in a browser. Messing around with the browser's autoplay policy might be required.
 
-The [SpcJs](https://elzo-d.github.io/SnesJs/spcplayer.html) link goes to a SPC player, which simply plays SPC files (most files seem to load correctly, but a few don't sound quite right). It shows the name, game, artist, dumper and comment from the SPC file, and a visualisation of the volume L & R (red & green), gain (yellow) and pitch (blue) for each channel (1 to 8, from left to right). Pressing L toggles 'log-mode', where it runs a single SPC-instruction each frame and logs it in trace-log format.
+The [SpcJs](https://angelo-wf.github.io/SnesJs/spcplayer.html) link goes to a SPC player, which simply plays SPC files (most files seem to load correctly, but a few don't sound quite right). It shows the name, game, artist, dumper and comment from the SPC file, and a visualisation of the volume L & R (red & green), gain (yellow) and pitch (blue) for each channel (1 to 8, from left to right). Pressing L toggles 'log-mode', where it runs a single SPC-instruction each frame and logs it in trace-log format.
 
 ## Resources
 
