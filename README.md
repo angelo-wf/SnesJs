@@ -5,11 +5,11 @@ Try it online [here](https://angelo-wf.github.io/SnesJs/).
 
 ## Note
 
-I don't think I will continue working on this Javascript emulator.
+I don't think I will continue working on this Javascript emulator, and I have archived this repository.
 
 Although it is a nice proof of concept, not being able to run at full speed (on my hardware) makes working on it quite annoying. I originally started it because my Javascript NES emulator ([here](https://github.com/angelo-wf/NesJs)) ran full speed (on my hardware) quite easily, even though it it not really optimised at all. This made me think emulating the SNES full speed might be possible as well. This however does not seem to be the case.
 
-I have instead decided to work on a SNES emulator in C, over [here](https://github.com/angelo-wf/LakeSnes). It has better performance (although still not all that good, but at least it runs full speed) and some of the bugs and shortcomings this emulator has are not present in the C version. I might look into using Emscripten to have that core run in the browser and use it in this emulator, instead of using the current all-Javascript core.
+I did once decide to work on a SNES emulator in C, LakeSnes, over [here](https://github.com/angelo-wf/LakeSnes). It has better performance (although still not all that good, but at least it runs full speed) and some of the bugs and shortcomings this emulator has are not present in the C version. I was planning on looking into using Emscripten to have that core run in the browser and use it in this emulator, instead of using the current all-Javascript core. However, some personal/mental issues mean that I don't really have the motivation to work on it any further (or really, on emulation in general). There are some forks of it (LakeSnes) that might be of interest though.
 
 ## About
 
